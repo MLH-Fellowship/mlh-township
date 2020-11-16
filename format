@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+isort .
+black -S .
+flake8 .
