@@ -7,6 +7,7 @@ class App extends Component {
 
   constructor(props) {
     super(props);
+    // Initial state of the canvas
     this.state = {
       x: 50,
       y: 100,
@@ -15,7 +16,9 @@ class App extends Component {
     }
   }
 
+  // Is invoked when everything is set up and ready to launch
   componentDidMount() {
+    // starts watching for keypresses
     keyboardjs.watch();
     keyboardjs.bind('', (e) => {
       switch (e.code) {
