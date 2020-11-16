@@ -4,10 +4,11 @@ import { Stage, Sprite } from '@inlet/react-pixi';
 
 class Town extends Component {
 
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
         // Initial state of the canvas
         this.state = {
+            conn: props.conn,
             x: 50,
             y: 100,
             height: window.innerHeight,
@@ -35,6 +36,8 @@ class Town extends Component {
                     break;
                 default:
             }
+            // Send final location to backend
+            this.state.conn.emit('event/move', { x: this.state.x, y: this.state.y });
         });
     }
 
