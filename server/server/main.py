@@ -8,6 +8,6 @@ locations = {}
 def home():
    return render_template('test.html', sync_mode=socketio.async_mode)
 
-@socketio.on('move')
+@socketio.on('message')
 def handle_message(message):
-    # deserialize the json request data
+   print('received message: ' + message)
