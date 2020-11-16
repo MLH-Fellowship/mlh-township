@@ -6,8 +6,8 @@ locations = {}
 
 @app.route('/')
 def home():
-   return render_template('test.html', sync_mode=socketio.async_mode)
+   return {"hello": "connected"}
 
 @socketio.on('message')
 def handle_message(message):
-   print('received message: ' + message)
+   print('received message: ', message)
