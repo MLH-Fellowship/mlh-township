@@ -7,21 +7,6 @@ class App extends Component {
     super();
     this.state = {
       socketConn: null,
-      activeUsers: [{
-        avatar: "./bunny.png",
-        x: 40,
-        y: 30
-      },
-      {
-        avatar: "./bunny.png",
-        x: 200,
-        y: 60
-      },
-      {
-        avatar: "./bunny.png",
-        x: 100,
-        y: 80
-      },]
     }
   }
 

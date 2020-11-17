@@ -16,7 +16,8 @@ class Town extends Component {
             x: Math.floor(xSpawn),
             y: Math.floor(ySpawn),
             height: window.innerHeight,
-            width: window.innerWidth
+            width: window.innerWidth,
+            users: []
         }
     }
 
@@ -47,7 +48,7 @@ class Town extends Component {
                 default:
             }
             // Send final location to backend
-            this.state.conn.emit('event/move', { x: this.state.x, y: this.state.y });
+            this.state.conn.emit('town/move', { x: this.state.x, y: this.state.y });
         });
     }
 
