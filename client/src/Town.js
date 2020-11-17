@@ -2,21 +2,28 @@ import { Component } from 'react';
 import * as keyboardjs from 'keyboardjs';
 import { Stage, Sprite } from '@inlet/react-pixi';
 
+import './Town.css';
+
+import ChatBox from './ChatBox';
+
 class Town extends Component {
 
     constructor(props) {
         super(props);
+
+        var wWidth = Math.floor(0.8 * window.innerWidth);
+        var wHeight = Math.floor(window.innerHeight);
         // Set random spawn position within a circle 
-        var radius = 100;
-        var xCenter = window.innerWidth / 2, yCentre = window.innerHeight / 2, theta = 2 * Math.PI * Math.random(), r = Math.sqrt(Math.random());
+        var radius = 50;
+        var xCenter = wWidth / 2, yCentre = wHeight / 2, theta = 2 * Math.PI * Math.random(), r = Math.sqrt(Math.random());
         var xSpawn = xCenter + radius * r * Math.cos(theta), ySpawn = yCentre + radius * r * Math.sin(theta);
         // Initial state of the canvas
         this.state = {
             conn: props.conn,
             x: Math.floor(xSpawn),
             y: Math.floor(ySpawn),
-            height: window.innerHeight,
-            width: window.innerWidth,
+            height: wHeight,
+            width: wWidth,
             users: {}
         }
     }
@@ -54,8 +61,8 @@ class Town extends Component {
             console.log('leave', socket_id);
         });
 
-        this.state.conn.on('town/update', ({player}) => {
-            if(player.socket_id === this.state.conn.id) {
+        this.state.conn.on('town/update', ({ player }) => {
+            if (player.socket_id === this.state.conn.id) {
                 return;
             }
             let user = this.state.users[player.socket_id];
@@ -99,10 +106,17 @@ class Town extends Component {
 
     render() {
         return (
-            <Stage width={this.state.width} height={this.state.height} options={{ backgroundColor: 0x222222, antialias: true }}>
-                <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
-                {this.renderUsers()}
-            </Stage>
+            <div className="app-town">
+                <div className="app-pixi">
+                    <Stage width={this.state.width} height={this.state.height} options={{ backgroundColor: 0x222222, antialias: true }}>
+                        <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
+                        {this.renderUsers()}
+                    </Stage>
+                </div>
+                <div className="app-chat">
+                    <ChatBox />
+                </div>
+            </div>
         );
     }
 
