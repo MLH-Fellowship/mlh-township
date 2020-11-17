@@ -16,18 +16,53 @@ class Town extends Component {
             x: Math.floor(xSpawn),
             y: Math.floor(ySpawn),
             height: window.innerHeight,
-            width: window.innerWidth
+            width: window.innerWidth,
+            users: {}
         }
     }
 
     // Is invoked when everything is set up and ready to launch
     componentDidMount() {
-        this.state.conn.emit('init', {username: "zerefwayne", x: this.state.x, y: this.state.y});
-        
-        this.state.conn.on('init', (message) => {
-          console.log(message);
+
+        // let name = prompt("What should we call you?", "???")
+        let name = "zerefwayne";
+
+        this.state.conn.emit('init', { username: name, x: this.state.x, y: this.state.y });
+
+        this.state.conn.on('init', ({ activePlayers }) => {
+            console.log(activePlayers);
+            let newUsers = {};
+            activePlayers.forEach(player => {
+                if (player.socket_id !== this.state.conn.id) {
+                    newUsers[player.socket_id] = player;
+                }
+            });
+            this.setState({ ...this.state, users: { ...this.state.users, ...newUsers } });
         })
-        
+
+        this.state.conn.on('town/join', ({ player }) => {
+            if (player.socket_id !== this.state.conn.id) {
+                this.setState({ ...this.state, users: { ...this.state.users, [player.socket_id]: player } });
+            }
+            console.log('join', player.username);
+        });
+
+        this.state.conn.on('town/leave', ({ socket_id }) => {
+            let newUsers = this.state.users;
+            delete newUsers[socket_id]
+            this.setState({ ...this.state, users: newUsers });
+            console.log('leave', socket_id);
+        });
+
+        this.state.conn.on('town/update', ({player}) => {
+            if(player.socket_id === this.state.conn.id) {
+                return;
+            }
+            let user = this.state.users[player.socket_id];
+            user.coordinates = player.coordinates;
+            this.setState({ ...this.state, users: { ...this.state.users, [player.socket_id]: user } });
+        });
+
         // starts watching for keypresses
         keyboardjs.watch();
         keyboardjs.bind('', (e) => {
@@ -47,7 +82,14 @@ class Town extends Component {
                 default:
             }
             // Send final location to backend
-            this.state.conn.emit('event/move', { x: this.state.x, y: this.state.y });
+            this.state.conn.emit('town/move', { x: this.state.x, y: this.state.y });
+        });
+    }
+
+    renderUsers() {
+        return Object.keys(this.state.users).map((userkey, index) => {
+            const user = this.state.users[userkey];
+            return (<Sprite key={index} image="./bunny.png" x={user.coordinates[0]} y={user.coordinates[1]} />)
         });
     }
 
@@ -59,6 +101,7 @@ class Town extends Component {
         return (
             <Stage width={this.state.width} height={this.state.height} options={{ backgroundColor: 0x222222, antialias: true }}>
                 <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
+                {this.renderUsers()}
             </Stage>
         );
     }
