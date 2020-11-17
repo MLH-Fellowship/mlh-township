@@ -1,0 +1,11 @@
+.app-town {
+    display: flex;
+}
+
+.app-town .app-pixi {
+    flex: 1;
+}
+
+.app-town .app-chat {
+    flex: 0 0 20%;
+}
