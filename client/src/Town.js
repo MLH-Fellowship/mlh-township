@@ -13,8 +13,8 @@ class Town extends Component {
         // Initial state of the canvas
         this.state = {
             conn: props.conn,
-            x: xSpawn,
-            y: ySpawn,
+            x: Math.floor(xSpawn),
+            y: Math.floor(ySpawn),
             height: window.innerHeight,
             width: window.innerWidth
         }
@@ -22,6 +22,12 @@ class Town extends Component {
 
     // Is invoked when everything is set up and ready to launch
     componentDidMount() {
+        this.state.conn.emit('init', {username: "zerefwayne", x: this.state.x, y: this.state.y});
+        
+        this.state.conn.on('init', (message) => {
+          console.log(message);
+        })
+        
         // starts watching for keypresses
         keyboardjs.watch();
         keyboardjs.bind('', (e) => {

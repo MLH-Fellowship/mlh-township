@@ -11,13 +11,14 @@ class App extends Component {
   }
 
   componentDidMount() {
-      const socket = io("http://localhost:5000/");
-      this.setState({ socketConn: socket });
+    const socket = io("http://localhost:5000/");
+    this.setState({ socketConn: socket });
+
   }
 
   render() {
     return (
-      this.state.socketConn ? <Town conn={this.state.socketConn}/> : "Loading.."
+      this.state.socketConn ? <Town conn={this.state.socketConn} /> : "Loading.."
     )
   }
 }
