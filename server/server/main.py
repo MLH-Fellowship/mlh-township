@@ -3,7 +3,7 @@ from flask import request
 from flask_socketio import emit
 
 from . import socketio
-from .acitve_players import ActivePlayers
+from .active_players import ActivePlayers
 from .player import Player
 
 ACTIVE_PLAYERS = ActivePlayers()
@@ -19,6 +19,7 @@ def on_connect():
     socket_id = str(request.sid)
     player = Player(socket_id=socket_id)
     ACTIVE_PLAYERS.add_player(player)
+    emit('town/join', {"player": player.__dict__()})
 
 
 @socketio.on('disconnect')
