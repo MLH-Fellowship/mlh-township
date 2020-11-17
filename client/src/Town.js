@@ -6,11 +6,15 @@ class Town extends Component {
 
     constructor(props) {
         super(props);
+        // Set random spawn position within a circle 
+        var radius = 100;
+        var xCenter = window.innerWidth / 2, yCentre = window.innerHeight / 2, theta = 2 * Math.PI * Math.random(), r = Math.sqrt(Math.random());
+        var xSpawn = xCenter + radius * r * Math.cos(theta), ySpawn = yCentre + radius * r * Math.sin(theta);
         // Initial state of the canvas
         this.state = {
             conn: props.conn,
-            x: 50,
-            y: 100,
+            x: xSpawn,
+            y: ySpawn,
             height: window.innerHeight,
             width: window.innerWidth
         }
