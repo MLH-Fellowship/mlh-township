@@ -12,19 +12,21 @@ ACTIVE_PLAYERS = ActivePlayers()
 @app.route('/')
 def home():
     return {"hello": "connected"}
-
+    
 
 @socketio.on('connect')
 def on_connect():
     socket_id = str(request.sid)
     player = Player(socket_id=socket_id)
     ACTIVE_PLAYERS.add_player(player)
+    emit('town/join', {"player": player.__dict()__})
 
 
 @socketio.on('disconnect')
 def on_disconnect():
     socket_id = str(request.sid)
     ACTIVE_PLAYERS.remove_player(socket_id)
+    emit('town/leave', {"socket_id": socket_id})
 
 
 @socketio.on('init')

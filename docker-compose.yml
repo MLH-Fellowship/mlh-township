@@ -1,0 +1,13 @@
+
+version: "3"
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+    - 5000:5000
+    volumes:
+    - ./server:/app
+    command: sh -c flask run
