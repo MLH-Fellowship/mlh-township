@@ -13,7 +13,7 @@ class Town extends Component {
 
         var wWidth = Math.floor(0.8 * window.innerWidth);
         var wHeight = Math.floor(window.innerHeight);
-        // Set random spawn position within a circle 
+        // Set random spawn position within a circle
         var radius = 50;
         var xCenter = wWidth / 2, yCentre = wHeight / 2, theta = 2 * Math.PI * Math.random(), r = Math.sqrt(Math.random());
         var xSpawn = xCenter + radius * r * Math.cos(theta), ySpawn = yCentre + radius * r * Math.sin(theta);
@@ -37,37 +37,39 @@ class Town extends Component {
         this.state.conn.emit('init', { username: name, x: this.state.x, y: this.state.y });
 
         this.state.conn.on('init', ({ activePlayers }) => {
-            console.log(activePlayers);
             let newUsers = {};
             activePlayers.forEach(player => {
-                if (player.socket_id !== this.state.conn.id) {
-                    newUsers[player.socket_id] = player;
+                if (player.socketId !== this.state.conn.id) {
+                    newUsers[player.socketId] = player;
                 }
             });
             this.setState({ ...this.state, users: { ...this.state.users, ...newUsers } });
         })
 
         this.state.conn.on('town/join', ({ player }) => {
-            if (player.socket_id !== this.state.conn.id) {
-                this.setState({ ...this.state, users: { ...this.state.users, [player.socket_id]: player } });
+            if (player.socketId !== this.state.conn.id) {
+                this.setState({ ...this.state, users: { ...this.state.users, [player.socketId]: player } });
             }
             console.log('join', player.username);
         });
 
-        this.state.conn.on('town/leave', ({ socket_id }) => {
+        this.state.conn.on('town/leave', ({ socketId }) => {
+            console.log(socketId);
             let newUsers = this.state.users;
-            delete newUsers[socket_id]
+            delete newUsers[socketId]
             this.setState({ ...this.state, users: newUsers });
-            console.log('leave', socket_id);
+            console.log('leave', socketId);
         });
 
-        this.state.conn.on('town/update', ({ player }) => {
-            if (player.socket_id === this.state.conn.id) {
-                return;
-            }
-            let user = this.state.users[player.socket_id];
-            user.coordinates = player.coordinates;
-            this.setState({ ...this.state, users: { ...this.state.users, [player.socket_id]: user } });
+        this.state.conn.on('town/update', ({players}) => {
+            let newUsers = {};
+            console.log('town/update', players);
+            players.forEach(player => {
+                if (player.socketId !== this.state.conn.id) {
+                    newUsers[player.socketId] = player;
+                }
+            });
+            this.setState({ ...this.state, users: { ...this.state.users, ...newUsers } });
         });
 
         // starts watching for keypresses
@@ -96,7 +98,8 @@ class Town extends Component {
     renderUsers() {
         return Object.keys(this.state.users).map((userkey, index) => {
             const user = this.state.users[userkey];
-            return (<Sprite key={index} image="./bunny.png" x={user.coordinates[0]} y={user.coordinates[1]} />)
+            // console.log(user);
+            return (<Sprite key={index} image="./bunny.png" height={80} width={60} x={user.xAxis} y={user.yAxis} />)
         });
     }
 
@@ -109,7 +112,7 @@ class Town extends Component {
             <div className="app-town">
                 <div className="app-pixi">
                     <Stage width={this.state.width} height={this.state.height} options={{ backgroundColor: 0x222222, antialias: true }}>
-                        <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
+                        <Sprite image="./bunny.png" height={80} width={60} x={this.state.x} y={this.state.y} />
                         {this.renderUsers()}
                     </Stage>
                 </div>

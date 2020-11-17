@@ -11,9 +11,8 @@ class App extends Component {
   }
 
   componentDidMount() {
-    const socket = io("http://localhost:5000/");
+    const socket = io.connect("http://127.0.0.1:5000");
     this.setState({ socketConn: socket });
-
   }
 
   render() {
