@@ -55,10 +55,17 @@ class Town extends Component {
         keyboardjs.stop();
     }
 
+    renderUsers() {
+        return this.state.users.map((user, i) => {
+            return <Sprite key={i} image={user.avatar} x={user.x} y={user.y} />
+        });
+    }
+
     render() {
         return (
             <Stage width={this.state.width} height={this.state.height} options={{ backgroundColor: 0x222222, antialias: true }}>
                 <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
+                {this.renderUsers()}
             </Stage>
         );
     }
