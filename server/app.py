@@ -1,5 +1,4 @@
-from server import init_app
-from server import socketio
+from server import init_app, socketio
 
 app = init_app()
 
