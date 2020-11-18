@@ -24,9 +24,12 @@ class Town extends Component {
             y: Math.floor(ySpawn),
             height: wHeight,
             width: wWidth,
-            users: {}
+            users: {},
+            messages: []
         }
     }
+
+    // 167993
 
     // Is invoked when everything is set up and ready to launch
     componentDidMount() {
@@ -50,20 +53,16 @@ class Town extends Component {
             if (player.socketId !== this.state.conn.id) {
                 this.setState({ ...this.state, users: { ...this.state.users, [player.socketId]: player } });
             }
-            console.log('join', player.username);
         });
 
         this.state.conn.on('town/leave', ({ socketId }) => {
-            console.log(socketId);
             let newUsers = this.state.users;
             delete newUsers[socketId]
             this.setState({ ...this.state, users: newUsers });
-            console.log('leave', socketId);
         });
 
         this.state.conn.on('town/update', ({players}) => {
             let newUsers = {};
-            console.log('town/update', players);
             players.forEach(player => {
                 if (player.socketId !== this.state.conn.id) {
                     newUsers[player.socketId] = player;
@@ -98,7 +97,6 @@ class Town extends Component {
     renderUsers() {
         return Object.keys(this.state.users).map((userkey, index) => {
             const user = this.state.users[userkey];
-            // console.log(user);
             return (<Sprite key={index} image="./bunny.png" x={user.xAxis} y={user.yAxis} />)
         });
     }
@@ -121,7 +119,7 @@ class Town extends Component {
                     </Stage>
                 </div>
                 <div className="app-chat">
-                    <ChatBox />
+                    <ChatBox conn={this.state.conn} />
                 </div>
             </div>
         );

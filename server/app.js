@@ -1,4 +1,5 @@
 const express = require('express');
+const uuid = require('uuid');
 const app = express();
 const cors = require('cors');
 app.use(cors());
@@ -115,4 +116,14 @@ io.on("connection", (socket) => {
             player = ACTIVE_PLAYERS.getPlayer(socketId);
         player.updateAxes(message.x, message.y);
     })
+
+    socket.on('town/chat', (message) => {
+        let socketId = String(socket.id),
+            player = ACTIVE_PLAYERS.getPlayer(socketId);
+        io.emit('town/chat', {
+            "from": player,
+            "message": message,
+            "at": new Date(),
+        });
+    });
 });
