@@ -99,7 +99,7 @@ class Town extends Component {
         return Object.keys(this.state.users).map((userkey, index) => {
             const user = this.state.users[userkey];
             // console.log(user);
-            return (<Sprite key={index} image="./bunny.png" height={80} width={60} x={user.xAxis} y={user.yAxis} />)
+            return (<Sprite key={index} image="./bunny.png" x={user.xAxis} y={user.yAxis} />)
         });
     }
 
@@ -110,9 +110,13 @@ class Town extends Component {
     render() {
         return (
             <div className="app-town">
-                <div className="app-pixi">
-                    <Stage width={this.state.width} height={this.state.height} options={{ backgroundColor: 0x222222, antialias: true }}>
-                        <Sprite image="./bunny.png" height={80} width={60} x={this.state.x} y={this.state.y} />
+                <div className="app-pixi" style={{backgroundImage: "url(" + "map.png" + ")",
+                        backgroundPosition: 'center',
+                        backgroundSize: 'cover',
+                        backgroundRepeat: 'no-repeat',
+                        }}>
+                    <Stage width={this.state.width} height={this.state.height} options={{ transparent: true, antialias: true }}>
+                        <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
                         {this.renderUsers()}
                     </Stage>
                 </div>
