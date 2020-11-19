@@ -74,28 +74,20 @@ class Room extends Object {
         this.members = []
     }
 
-    addMember(socketId){
-        this.members.push(socketId);
+    addMember(player) {
+        this.members.push(player);
     }
 
-    removeMember(socketId){
-        try{
-            index = this.members.indexOf(socketId);
-            if (index != -1){
-                this.members.splice(index, 1);
-            }
-        }
-        catch(error){
-            throw error;
-        }
+    removeMember(player) {
+        this.members = this.members.filter((member) => {
+            return member.socketId !== player.socketId;
+        })
     }
 
-    getMembersList(){
+    getMembersList() {
         return this.members;
     }
-
     // static
-
 }
 
 class ActiveRooms extends Object {
@@ -110,7 +102,7 @@ class ActiveRooms extends Object {
             throw error;
         }
     }
-
+    // TODO: check if room exists
     getRoom(roomName) {
         try {
             return this[roomName];
@@ -120,7 +112,8 @@ class ActiveRooms extends Object {
     }
 
     getList() {
-        return Object.values(this).filter((room) => room.name !== null)
+        // return Object.values(this).filter((room) => room.name !== null)
+        return Object.values(this);
     }
 }
 
@@ -129,7 +122,8 @@ class ActiveRooms extends Object {
 // ===============================================
 
 let ACTIVE_PLAYERS = new ActivePlayers();
-let ACTIVE_ROOMS = new ActiveRooms()
+let ACTIVE_ROOMS = new ActiveRooms();
+
 setInterval(() => {
     io.emit('town/update', {
         "players": ACTIVE_PLAYERS.getList()
@@ -152,7 +146,23 @@ io.on("connection", (socket) => {
         ACTIVE_PLAYERS.removePlayer(socketId)
         io.emit('town/leave', {
             "socketId": socketId
+        });
+        console.log("-- Removing user from all rooms --")
+        let player = ACTIVE_PLAYERS.getPlayer(socketId);
+        if (player === undefined) {
+            return;
+        }
+        console.log("town/leave", player);
+        socket.rooms.forEach((room) => {
+            if (socket.id === room) {
+                return;
+            }
+            ACTIVE_ROOMS.getRoom(room).removeMember(player)
+            io.to(room).emit('room/update', {
+                members: room.getMembersList()
+            });
         })
+
     });
 
     socket.on('init', (message) => {
@@ -160,6 +170,7 @@ io.on("connection", (socket) => {
         let player = ACTIVE_PLAYERS.getPlayer(socketId);
         player.updateUsername(message.username);
         player.updateAxes(message.x, message.y);
+        console.log("town/join", player);
         socket.emit('init', {
             'activePlayers': ACTIVE_PLAYERS.getList()
         });
@@ -169,7 +180,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on('town/move', (message) => {
-        console.log('town/move', socket.id, message);
+        // console.log('town/move', socket.id, message);
         let socketId = String(socket.id),
             player = ACTIVE_PLAYERS.getPlayer(socketId);
         player.updateAxes(message.x, message.y);
@@ -186,33 +197,62 @@ io.on("connection", (socket) => {
     });
 
     socket.on('room/create', (message) => {
-        let name = message.name,
+        console.log("Wants to create room", message);
+        let room, name = message.name;
+
+        // Create room only if does not exists
+        room = ACTIVE_ROOMS.getRoom(name);
+        if (room === undefined) {
             room = new Room(name);
-        ACTIVE_ROOMS.addRoom(room);
-        io.emit('new_room', {"room_name": name}); //tell everyone about the new room
+            ACTIVE_ROOMS.addRoom(room);
+        }
+        io.emit('new_room', { "room_name": name }); //tell everyone about the new room
         socket.join(name); // joins the socket to new room
         room.addMember(ACTIVE_PLAYERS.getPlayer(socket.id)) //adds member to js room
-        console.log(room)
+        console.log("ROOM CREATED", room);
+        socket.emit('room/update', {
+            members: room.getMembersList()
+        });
+        try {
+            socket.rooms.forEach((roomID) => {
+                if (roomID === socket.id) {
+                    return;
+                }
+                socket.to(roomID).emit('room/update', {
+                    members: room.getMembersList()
+                });
+            })
+        }
+        catch (error) {
+            console.log(error)
+            return
+        }
+
     });
 
     socket.on('room/join', (message) => {
-        try{
+        try {
+            // ensures room exists
             let room = ACTIVE_ROOMS.getRoom(message.name);
         }
-        catch(error){
+        catch (error) {
+            console.log("Room doesn't exist!");
             return;
         }
 
         // Leave currently joined rooms
-        try{
+        try {
             socket.rooms.forEach((room) => {
+                if (room === socket.id) {
+                    return;
+                }
                 socket.leave(room);
                 ACTIVE_ROOMS.getRoom(
                     room
-                ).removeMember(socket.id);
+                ).removeMember(ACTIVE_PLAYERS.getPlayer(socket.id));
             })
         }
-        catch(error){
+        catch (error) {
             console.log(error)
             return
         }
@@ -221,47 +261,79 @@ io.on("connection", (socket) => {
         try {
             socket.join(message.name);
         }
-        catch(err){
+        catch (err) {
             console.log(err)
         }
-        finally{
+        finally {
+            let room = ACTIVE_ROOMS.getRoom(message.name);
+            if (room === undefined) {
+                socket.emit('error', { message: 'Room does not exists' })
+                return;
+            }
             room.addMember(ACTIVE_PLAYERS.getPlayer(socket.id));
+            console.log(room.id, room.members.length);
+            // socket.to(room).emit('room/update', {
+            //     members: room.getMembersList()
+            // });
+            socket.emit('room/update', {
+                members: room.getMembersList()
+            });
+            try {
+                socket.rooms.forEach((roomID) => {
+                    if (roomID === socket.id) {
+                        return;
+                    }
+                    socket.to(roomID).emit('room/update', {
+                        members: room.getMembersList()
+                    });
+                })
+            }
+            catch (error) {
+                console.log(error)
+                return
+            }
+            // socket.emit('room/update', {}
         }
     });
 
     socket.on('room/leave', (message) => {
-        let room = ACTIVE_ROOMS.getRoom(message.name);
-
+        // let room = ACTIVE_ROOMS.getRoom(message.name);
         // Leave currently joined rooms
-        try{
-            socket.rooms.forEach((room) => {
-                socket.leave(room);
-                ACTIVE_ROOMS.getRoom(
-                    room
-                ).removeMember(socket.id);
-            })
+        try {
+            socket.rooms.forEach((roomID) => {
+                if (socket.id === roomID) {
+                    return;
+                }
+                socket.leave(roomID);
+                let room = ACTIVE_ROOMS.getRoom(
+                    message.roomName
+                )
+                room.removeMember(ACTIVE_PLAYERS.getPlayer(socket.id));
+                socket.to(roomID).emit('room/update', {
+                    members: room.getMembersList()
+                });
+            });
+            console.log('room/leave', socket.id);
         }
-        catch(error){
+        catch (error) {
             console.log(error)
         }
     });
 
+
+
     socket.on('room/chat', (message) => {
-        let room = socket.rooms.keys().next().value;
-        console.log("in room message", room, message)
-        socket.to(room).emit('room/chat', {
-            'message': message.message,
+        let room;
+        socket.rooms.forEach((socket_room) => {
+            if (socket_room === socket.id) {
+                return;
+            }
+            room = socket_room;
+        });
+        io.to(room).emit('room/chat', {
+            'message': message,
             'from': ACTIVE_PLAYERS.getPlayer(socket.id),
             'at': new Date()
         });
     });
 });
-
-        /*
-    routes needed:
-        create new room: socket.on('new_room') -> new room name
-        join room: socket.on('{room_name}/join)
-        room chat: socket.on('{room_name}/chat)
-        leave room: socket.on('{room_name}/leave)
-        */
-
