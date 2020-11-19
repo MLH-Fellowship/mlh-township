@@ -117,10 +117,11 @@ class Town extends Component {
                         <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
                         {this.renderUsers()}
                     </Stage>
+
                 </div>
                 <div className="app-chat">
-                    <ChatBox conn={this.state.conn} />
-                </div>
+                        <ChatBox conn={this.state.conn} />
+                    </div>
             </div>
         );
     }

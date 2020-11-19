@@ -1,5 +1,5 @@
 const express = require('express');
-const uuid = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const app = express();
 const cors = require('cors');
 app.use(cors());
@@ -66,12 +66,70 @@ class ActivePlayers extends Object {
     }
 }
 
+class Room extends Object {
+    constructor(name) {
+        super(name);
+        this.id = uuidv4();
+        this.name = name;
+        this.members = []
+    }
+
+    addMember(socketId){
+        this.members.push(socketId);
+    }
+
+    removeMember(socketId){
+        try{
+            index = this.members.indexOf(socketId);
+            if (index != -1){
+                this.members.splice(index, 1);
+            }
+        }
+        catch(error){
+            throw error;
+        }
+    }
+
+    getMembersList(){
+        return this.members;
+    }
+
+    // static
+
+}
+
+class ActiveRooms extends Object {
+    addRoom(room) {
+        this[room.name] = room;
+    }
+
+    removeRoom(roomName) {
+        try {
+            delete this[roomName]
+        } catch (err) {
+            throw error;
+        }
+    }
+
+    getRoom(roomName) {
+        try {
+            return this[roomName];
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    getList() {
+        return Object.values(this).filter((room) => room.name !== null)
+    }
+}
+
 // ===============================================
 // Constants
 // ===============================================
 
 let ACTIVE_PLAYERS = new ActivePlayers();
-
+let ACTIVE_ROOMS = new ActiveRooms()
 setInterval(() => {
     io.emit('town/update', {
         "players": ACTIVE_PLAYERS.getList()
@@ -95,7 +153,7 @@ io.on("connection", (socket) => {
         io.emit('town/leave', {
             "socketId": socketId
         })
-    })
+    });
 
     socket.on('init', (message) => {
         let socketId = String(socket.id);
@@ -115,7 +173,7 @@ io.on("connection", (socket) => {
         let socketId = String(socket.id),
             player = ACTIVE_PLAYERS.getPlayer(socketId);
         player.updateAxes(message.x, message.y);
-    })
+    });
 
     socket.on('town/chat', (message) => {
         let socketId = String(socket.id),
@@ -126,4 +184,84 @@ io.on("connection", (socket) => {
             "at": new Date(),
         });
     });
+
+    socket.on('room/create', (message) => {
+        let name = message.name,
+            room = new Room(name);
+        ACTIVE_ROOMS.addRoom(room);
+        io.emit('new_room', {"room_name": name}); //tell everyone about the new room
+        socket.join(name); // joins the socket to new room
+        room.addMember(ACTIVE_PLAYERS.getPlayer(socket.id)) //adds member to js room
+        console.log(room)
+    });
+
+    socket.on('room/join', (message) => {
+        try{
+            let room = ACTIVE_ROOMS.getRoom(message.name);
+        }
+        catch(error){
+            return;
+        }
+
+        // Leave currently joined rooms
+        try{
+            socket.rooms.forEach((room) => {
+                socket.leave(room);
+                ACTIVE_ROOMS.getRoom(
+                    room
+                ).removeMember(socket.id);
+            })
+        }
+        catch(error){
+            console.log(error)
+            return
+        }
+
+        // Join user to a new room
+        try {
+            socket.join(message.name);
+        }
+        catch(err){
+            console.log(err)
+        }
+        finally{
+            room.addMember(ACTIVE_PLAYERS.getPlayer(socket.id));
+        }
+    });
+
+    socket.on('room/leave', (message) => {
+        let room = ACTIVE_ROOMS.getRoom(message.name);
+
+        // Leave currently joined rooms
+        try{
+            socket.rooms.forEach((room) => {
+                socket.leave(room);
+                ACTIVE_ROOMS.getRoom(
+                    room
+                ).removeMember(socket.id);
+            })
+        }
+        catch(error){
+            console.log(error)
+        }
+    });
+
+    socket.on('room/chat', (message) => {
+        let room = socket.rooms.keys().next().value;
+        console.log("in room message", room, message)
+        socket.to(room).emit('room/chat', {
+            'message': message.message,
+            'from': ACTIVE_PLAYERS.getPlayer(socket.id),
+            'at': new Date()
+        });
+    });
 });
+
+        /*
+    routes needed:
+        create new room: socket.on('new_room') -> new room name
+        join room: socket.on('{room_name}/join)
+        room chat: socket.on('{room_name}/chat)
+        leave room: socket.on('{room_name}/leave)
+        */
+
