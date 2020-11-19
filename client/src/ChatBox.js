@@ -73,7 +73,7 @@ class ChatBox extends Component {
                 </div>
                 <div className="messageBox">
                     <textarea className="messageInput" value={this.state.inputText} onChange={this.handleChange}></textarea>
-                    <button style={{ marginRight: '.5rem', marginLeft: '.5rem' }} onClick={() => { this.sendMessage() }} ><img src="send.png" /></button>
+                    <button style={{ marginRight: '.5rem', marginLeft: '.5rem' }} onClick={() => { this.sendMessage() }} ><img alt="lo bhai" src="send.png" /></button>
                 </div>
             </div>
         )
