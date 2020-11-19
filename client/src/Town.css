@@ -1,5 +1,6 @@
 .app-town {
     display: flex;
+    height: 100vh;
 }
 
 .app-town .app-pixi {
@@ -8,4 +9,9 @@
 
 .app-town .app-chat {
     flex: 0 0 20%;
+}
+
+.app-town .app-room {
+    flex: 1;
+    height: 100%;
 }
