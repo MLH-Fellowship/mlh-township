@@ -20,7 +20,7 @@ const io = require("socket.io")(server, {
 // ===============================================
 
 class Player extends Object {
-    constructor(socketId, username = null, xAxis = 0, yAxis = 0) {
+    constructor(socketId, peerId=null, username = null, xAxis = 0, yAxis = 0) {
         super();
         this.socketId = socketId;
         this.username = username;
@@ -35,6 +35,10 @@ class Player extends Object {
 
     updateUsername(username) {
         this.username = username
+    }
+
+    updatePeerId(peerId) {
+        this.peerId = peerId
     }
 
 }
@@ -196,6 +200,12 @@ io.on("connection", (socket) => {
         });
     });
 
+    socket.on('user/peer', (peerId) => {
+        let plater = ACTIVE_PLAYERS.getPlayer(socket.id);
+        player.updatePeerId(peerId);
+        console.log('- Peer ID updated -',player)
+    });
+
     socket.on('room/create', (message) => {
         console.log("Wants to create room", message);
         let room, name = message.name;
@@ -210,16 +220,22 @@ io.on("connection", (socket) => {
         socket.join(name); // joins the socket to new room
         room.addMember(ACTIVE_PLAYERS.getPlayer(socket.id)) //adds member to js room
         console.log("ROOM CREATED", room);
-        socket.emit('room/update', {
-            members: room.getMembersList()
-        });
+        // socket.emit('room/update', {
+        //     members: room.getMembersList()
+        // });
+        // socket.emit('room/join', {
+        //     "member": player
+        // });
         try {
             socket.rooms.forEach((roomID) => {
                 if (roomID === socket.id) {
                     return;
                 }
-                socket.to(roomID).emit('room/update', {
-                    members: room.getMembersList()
+                // socket.to(roomID).emit('room/update', {
+                //     members: room.getMembersList()
+                // });
+                io.to(roomID).emit('room/join', {
+                    "member": player
                 });
             })
         }
@@ -265,26 +281,25 @@ io.on("connection", (socket) => {
             console.log(err)
         }
         finally {
-            let room = ACTIVE_ROOMS.getRoom(message.name);
+            let room = ACTIVE_ROOMS.getRoom(message.name),
+                player = ACTIVE_PLAYERS.getPlayer(socket.id);
             if (room === undefined) {
                 socket.emit('error', { message: 'Room does not exists' })
                 return;
             }
-            room.addMember(ACTIVE_PLAYERS.getPlayer(socket.id));
+            room.addMember(player);
             console.log(room.id, room.members.length);
-            // socket.to(room).emit('room/update', {
-            //     members: room.getMembersList()
-            // });
-            socket.emit('room/update', {
-                members: room.getMembersList()
-            });
             try {
                 socket.rooms.forEach((roomID) => {
                     if (roomID === socket.id) {
                         return;
                     }
-                    socket.to(roomID).emit('room/update', {
-                        members: room.getMembersList()
+                    // socket.to(roomID).emit('room/update', {
+                    //     members: room.getMembersList()
+                    // });
+                    console.log(roomID, "informing join", player);
+                    io.to(roomID).emit('room/join', {
+                        "member": player
                     });
                 })
             }
@@ -297,8 +312,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on('room/leave', (message) => {
-        // let room = ACTIVE_ROOMS.getRoom(message.name);
-        // Leave currently joined rooms
+        let player = ACTIVE_PLAYERS.getPlayer(socket.id);
         try {
             socket.rooms.forEach((roomID) => {
                 if (socket.id === roomID) {
@@ -308,12 +322,17 @@ io.on("connection", (socket) => {
                 let room = ACTIVE_ROOMS.getRoom(
                     message.roomName
                 )
-                room.removeMember(ACTIVE_PLAYERS.getPlayer(socket.id));
-                socket.to(roomID).emit('room/update', {
-                    members: room.getMembersList()
+                room.removeMember(player);
+                // socket.to(roomID).emit('room/update', {
+                //     members: room.getMembersList()
+                // });
+                io.to(roomID).emit('room/leave', {
+                    member: player
                 });
+                // socket.to('room/userLeft').broadcast.emit({
+                //     'leftUserPeerId': player.peerId
+                // })
             });
-            console.log('room/leave', socket.id);
         }
         catch (error) {
             console.log(error)
