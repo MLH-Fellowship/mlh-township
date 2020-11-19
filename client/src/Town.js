@@ -168,6 +168,7 @@ class Town extends Component {
                     <button onClick={() => { this.createRoom() }}>Create Room</button>
                     <button onClick={() => { this.leaveRoom() }}>Leave Room</button>
                 </div>
+<<<<<<< HEAD
                 {
                     this.state.room.isActive ?
                         (
@@ -207,6 +208,12 @@ class Town extends Component {
                 }
                 <div className="app-chat">
                     <ChatBox conn={this.state.conn} room={this.state.room} isRoomActive={this.isRoomActive} />
+=======
+                <div id="overlay">
+                <div className="app-chat">
+                        <ChatBox conn={this.state.conn} />
+                    </div>
+>>>>>>> Add icons for chatbox window and change background
                 </div>
             </div>
         );

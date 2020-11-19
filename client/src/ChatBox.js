@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { formatDistance } from 'date-fns';
 
 import './ChatBox.css';
 
@@ -11,7 +12,7 @@ class ChatBox extends Component {
                 {
                     "from": { "username": "zerefwayne" },
                     "message": "Hello how are you",
-                    "at": new Date().toDateString()
+                    "at": new Date()
                 }
             ],
             conn: props.conn,
@@ -38,7 +39,11 @@ class ChatBox extends Component {
     renderMessages() {
         return this.state.messages.map((message, index) => {
             return (
-                <li key={index} >{message.from.username}: {message.message} ({message.at})</li>
+            <p key={index} > 
+            <span style={{color: "#C0C0C0",fontSize: "1.25rem", fontWeight: "bolder"}}>{message.from.username} {">"} </span> 
+            {message.message}
+            <sub style={{color: "#A0A0A0"}}> {formatDistance(message.at, new Date(), { addSuffix: true })}</sub>
+            </p>
             )
         })
     }
