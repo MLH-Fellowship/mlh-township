@@ -22,6 +22,8 @@ class ChatBox extends Component {
         }
         this.renderMessages = this.renderMessages.bind(this);
         this.sendMessage = this.sendMessage.bind(this);
+        this.joinRoom = this.joinRoom.bind(this);
+        this.createRoom = this.createRoom.bind(this);
         this.handleChange = this.handleChange.bind(this);
     }
 
@@ -33,6 +35,11 @@ class ChatBox extends Component {
         this.state.conn.on('room/chat', (req) => {
             console.log('room/chat');
             this.setState({ messages: [...this.state.messages, req] });
+        });
+
+        this.state.conn.on('room/chat', (req) => {
+            console.log('room/chat');
+            this.setState({messages: [...this.state.messages, req]});
         });
     }
 
