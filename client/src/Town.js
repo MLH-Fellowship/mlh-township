@@ -163,12 +163,7 @@ class Town extends Component {
     render() {
         return (
             <div className="app-town">
-                <div>
-                    <button onClick={() => { this.joinRoom() }} >Join Room</button>
-                    <button onClick={() => { this.createRoom() }}>Create Room</button>
-                    <button onClick={() => { this.leaveRoom() }}>Leave Room</button>
-                </div>
-<<<<<<< HEAD
+
                 {
                     this.state.room.isActive ?
                         (
@@ -189,32 +184,39 @@ class Town extends Component {
                                         })
                                     }
                                 </ul>
-
+                                <div id="overlay">
+                                    <div className="app-chat">
+                                        <ChatBox conn={this.state.conn} room={this.state.room} isRoomActive={this.isRoomActive} />
+                                    </div>
+                                </div>
                             </div>
                         ) : (
-                            <div className="app-pixi" style={{
-                                backgroundImage: 'url(map.png)',
-                                backgroundPosition: 'center',
-                                backgroundSize: 'cover',
-                                backgroundRepeat: 'no-repeat',
-                            }}>
-                                <Stage width={this.state.width} height={this.state.height} options={{ transparent: true, antialias: true }}>
-                                    <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
-                                    {this.renderUsers()}
-                                </Stage>
-
+                            <div>
+                                <div>
+                                    <button onClick={() => { this.joinRoom() }} >Join Room</button>
+                                    <button onClick={() => { this.createRoom() }}>Create Room</button>
+                                    <button onClick={() => { this.leaveRoom() }}>Leave Room</button>
+                                </div>
+                                <div className="app-pixi" style={{
+                                    backgroundImage: 'url(map.png)',
+                                    backgroundPosition: 'center',
+                                    backgroundSize: 'cover',
+                                    backgroundRepeat: 'no-repeat',
+                                }}>
+                                    <Stage width={this.state.width} height={this.state.height} options={{ transparent: true, antialias: true }}>
+                                        <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
+                                        {this.renderUsers()}
+                                    </Stage>
+                                    <div id="overlay">
+                                        <div className="app-chat">
+                                            <ChatBox conn={this.state.conn} room={this.state.room} isRoomActive={this.isRoomActive} />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )
                 }
-                <div className="app-chat">
-                    <ChatBox conn={this.state.conn} room={this.state.room} isRoomActive={this.isRoomActive} />
-=======
-                <div id="overlay">
-                <div className="app-chat">
-                        <ChatBox conn={this.state.conn} />
-                    </div>
->>>>>>> Add icons for chatbox window and change background
-                </div>
+
             </div>
         );
     }

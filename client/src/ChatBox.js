@@ -39,11 +39,11 @@ class ChatBox extends Component {
     renderMessages() {
         return this.state.messages.map((message, index) => {
             return (
-            <p key={index} > 
-            <span style={{color: "#C0C0C0",fontSize: "1.25rem", fontWeight: "bolder"}}>{message.from.username} {">"} </span> 
-            {message.message}
-            <sub style={{color: "#A0A0A0"}}> {formatDistance(message.at, new Date(), { addSuffix: true })}</sub>
-            </p>
+                <p key={index} >
+                    <span style={{ color: "#C0C0C0", fontSize: "1.25rem", fontWeight: "bolder" }}>{message.from.username} {">"} </span>
+                    {message.message}
+                    <sub style={{ color: "#A0A0A0" }}> {formatDistance(new Date(message.at), new Date(), { addSuffix: true })}</sub>
+                </p>
             )
         })
     }
@@ -73,7 +73,7 @@ class ChatBox extends Component {
                 </div>
                 <div className="messageBox">
                     <textarea className="messageInput" value={this.state.inputText} onChange={this.handleChange}></textarea>
-                    <button style={{marginRight: '.5rem', marginLeft: '.5rem'}} onClick={() => {this.sendMessage()}} ><img src="send.png" /></button>
+                    <button style={{ marginRight: '.5rem', marginLeft: '.5rem' }} onClick={() => { this.sendMessage() }} ><img src="send.png" /></button>
                 </div>
             </div>
         )
