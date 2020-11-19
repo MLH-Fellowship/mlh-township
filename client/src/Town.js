@@ -12,7 +12,7 @@ class Town extends Component {
     constructor(props) {
         super(props);
 
-        var wWidth = Math.floor(0.8 * window.innerWidth);
+        var wWidth = Math.floor(window.innerWidth);
         var wHeight = Math.floor(window.innerHeight);
         // Set random spawn position within a circle
         var radius = 50;

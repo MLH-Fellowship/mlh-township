@@ -1,6 +1,10 @@
 .app-town {
     display: flex;
+<<<<<<< HEAD
     height: 100vh;
+=======
+    position: relative;
+>>>>>>> Fix chat window
 }
 
 .app-town .app-pixi {
@@ -8,7 +12,8 @@
 }
 
 .app-town .app-chat {
-    flex: 0 0 20%;
+    height: 100%;
+    margin: 30px;
 }
 
 <<<<<<< HEAD
@@ -18,15 +23,19 @@
 }
 =======
 #overlay {
-    position: fixed; /* Sit on top of the page content */
-    display: block; /* Hidden by default */
-    width: 100%; /* Full width (cover the whole page) */
-    height: 20%; /* Full height (cover the whole page) */
+    position: absolute;
+    width: 20%;
+    height: 100vh; 
     top: 0;
-    left: 0;
     right: 0;
+<<<<<<< HEAD
     bottom: 0;
     background-color: rgba(0, 0, 0, 0); /* Black background with opacity */
     z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
   }
 >>>>>>> Add icons for chatbox window and change background
+=======
+    background-color: rgba(0, 0, 0, 0);
+    z-index: 2; 
+  }
+>>>>>>> Fix chat window
