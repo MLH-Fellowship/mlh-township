@@ -261,31 +261,19 @@ io.on("connection", (socket) => {
     });
 
     socket.on('room/leave', (message) => {
-        let player = ACTIVE_PLAYERS.getPlayer(socket.id);
-        try {
-            socket.rooms.forEach((roomID) => {
-                if (socket.id === roomID) {
-                    return;
-                }
-                socket.leave(roomID);
-                let room = ACTIVE_ROOMS.getRoom(
-                    message.roomName
-                )
-                room.removeMember(player);
-                // socket.to(roomID).emit('room/update', {
-                //     members: room.getMembersList()
-                // });
-                io.to(roomID).emit('room/leave', {
-                    member: player
-                });
-                // socket.to('room/userLeft').broadcast.emit({
-                //     'leftUserPeerId': player.peerId
-                // })
-            });
-        }
-        catch (error) {
-            console.log(error)
-        }
+        let roomName = message.roomName;
+        let player = ACTIVE_PLAYERS.getPlayer(socket.id); 
+        let room = ACTIVE_ROOMS.getRoom(roomName);
+        if (room === undefined) {
+            socket.emit('error', {message: `invalid room. cannot leave. ${roomName}`});
+            return;
+        } 
+        // room exists
+        socket.leave(roomName);
+        room.removeMember(player);
+        io.to(roomName).emit('room/leave', {
+            member: player
+        });
     });
 
 
