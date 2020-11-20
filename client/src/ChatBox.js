@@ -9,16 +9,12 @@ class ChatBox extends Component {
         super(props);
         this.state = {
             messages: [
-                {
-                    "from": { "username": "zerefwayne" },
-                    "message": "Hello how are you",
-                    "at": new Date()
-                }
             ],
             conn: props.conn,
-            inputText: "Hello",
+            inputText: "",
             room: props.room,
-            isRoomActive: props.isRoomActive
+            isRoomActive: props.isRoomActive,
+            getRoomName: props.getRoomName
         }
         this.renderMessages = this.renderMessages.bind(this);
         this.sendMessage = this.sendMessage.bind(this);
@@ -39,13 +35,15 @@ class ChatBox extends Component {
     renderMessages() {
         return this.state.messages.map((message, index) => {
             return (
-                <p key={index} >
-                    <span style={{ color: "#C0C0C0", fontSize: "1.25rem", fontWeight: "bolder" }}>{message.from.username} {">"} </span>
+                <li key={index} style={{width: '100%', wordWrap: 'break-word'}} >
+                    <span style={{ fontSize: "1rem", fontWeight: "bolder" }}>{`${message.from.username}:`} </span>
                     {message.message}
-                    <sub style={{ color: "#A0A0A0" }}> {formatDistance(new Date(message.at), new Date(), { addSuffix: true })}</sub>
-                </p>
+                    {/* <sub style={{ color: "#A0A0A0" }}> {formatDistance(new Date(message.at), new Date(), { addSuffix: true })}</sub> */}
+                </li>
+                
             )
         })
+
     }
 
     sendMessage() {
@@ -62,19 +60,25 @@ class ChatBox extends Component {
 
     render() {
         return (
-            <div className="app-chatbox">
+            <div className={this.state.isRoomActive() ? "app-chatbox app-chatbox-dark" : "app-chatbox"}>
                 <div className="header">
-                    MLH Township
+                    <p>
+                        MLH Township
+                    </p>
+                    <p style={{fontSize: '1.5rem'}}>
+                        {this.state.isRoomActive() ? `Room: ${this.state.getRoomName()}` : ""}
+                    </p>
+
                 </div>
                 <div className="chatWindow">
                     <ul>
                         {this.renderMessages()}
                     </ul>
                 </div>
-                <div className="messageBox">
-                    <textarea className="messageInput" value={this.state.inputText} onChange={this.handleChange}></textarea>
-                    <button style={{ marginRight: '.5rem', marginLeft: '.5rem' }} onClick={() => { this.sendMessage() }} ><img alt="lo bhai" src="send.png" /></button>
-                </div>
+                <form className="messageBox" onSubmit={(e) => { e.preventDefault(); this.sendMessage() }}>
+                    <textarea placeholder="Send a message" className="messageInput" value={this.state.inputText} onChange={this.handleChange}></textarea>
+                    <button style={{ backgroundColor: "white", borderRadius: '5px', marginRight: '.5rem', marginLeft: '.5rem' }} type="submit"><img alt="lo bhai" src="send.png" /></button>
+                </form>
             </div>
         )
     }

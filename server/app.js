@@ -20,7 +20,7 @@ const io = require("socket.io")(server, {
 // ===============================================
 
 class Player extends Object {
-    constructor(socketId, peerId = null, avatar="bunny", username = null, xAxis = 0, yAxis = 0) {
+    constructor(socketId, peerId = null, avatar = "bunny", username = null, xAxis = 0, yAxis = 0) {
         super();
         this.socketId = socketId;
         this.username = username;
@@ -253,26 +253,28 @@ io.on("connection", (socket) => {
         let player = ACTIVE_PLAYERS.getPlayer(socket.id);
 
         try {
-        room.addMember(player);
+            let room = ACTIVE_ROOMS.getRoom(roomName);
+            room.addMember(player);
+            console.log(room.id, room.members.length);
+
+            console.log(roomName, "informing join", player);
+            io.to(roomName).emit('room/join', {
+                "member": player
+            });
         } catch (err) {
             console.log(err);
         }
-        console.log(room.id, room.members.length);
 
-        console.log(roomName, "informing join", player);
-        io.to(roomName).emit('room/join', {
-            "member": player
-        });
     });
 
     socket.on('room/leave', (message) => {
         let roomName = message.roomName;
-        let player = ACTIVE_PLAYERS.getPlayer(socket.id); 
+        let player = ACTIVE_PLAYERS.getPlayer(socket.id);
         let room = ACTIVE_ROOMS.getRoom(roomName);
         if (room === undefined) {
-            socket.emit('error', {message: `invalid room. cannot leave. ${roomName}`});
+            socket.emit('error', { message: `invalid room. cannot leave. ${roomName}` });
             return;
-        } 
+        }
         // room exists
         socket.leave(roomName);
         room.removeMember(player);
