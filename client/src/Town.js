@@ -1,6 +1,6 @@
 import { Component, createRef } from 'react';
 import * as keyboardjs from 'keyboardjs';
-import { Stage, Sprite } from '@inlet/react-pixi';
+import { Stage, Sprite, Container, Text} from '@inlet/react-pixi';
 // eslint-disable-next-line
 import Peer from 'peerjs';
 
@@ -151,15 +151,44 @@ class Town extends Component {
                 default:
             }
             // Send final location to backend
-            this.state.conn.emit('town/move', { x: this.state.x, y: this.state.y });
+            this.state.conn.emit('town/move', { x: this.state.x, y: this.state.y });       
         });
+    }
+
+    displayRoom() {
+        let xc = this.state.width/2, yc  = 0;
+        let radius = 200;
+        let dist = Math.sqrt(( this.state.x - xc )*( this.state.x - xc ) + ( this.state.y - yc )*( this.state.y - yc ));
+        
+        if( dist < radius ){
+            // return(
+            //     <button onClick={() => { this.joinRoom() }} >Join Room</button>
+            //     <button onClick={() => { this.createRoom() }}>Create Room</button>
+            // );
+        } 
     }
 
     renderUsers() {
         return Object.keys(this.state.users).map((userkey, index) => {
             const user = this.state.users[userkey];
-            console.log(user);
-            return (<Sprite key={index} image={"./" + user.avatar + ".png"} x={user.xAxis} y={user.yAxis} />)
+            return (
+                <Container position={[user.xAxis, user.yAxis]}>
+                    <Text text={user.username} anchor={0.5} x={0} y={-40} 
+                        style={
+                            {
+                                align: 'center',
+                                fontFamily: 'Helvetica',
+                                fontSize: 20,
+                                fontWeight: 'bold',
+                                fontVariant: 'small-caps',
+                                wordWrap: true,
+                                wordWrapWidth: 40,   
+                                color: 'white',
+                            }
+                        }/>
+                    <Sprite key={index} image={"./" + user.avatar + ".png"} anchor={0.5} />
+                </Container>
+            )
         });
     }
 
@@ -412,8 +441,7 @@ class Town extends Component {
                         ) : (
                             <div>
                                 <div>
-                                    <button onClick={() => { this.joinRoom() }} >Join Room</button>
-                                    <button onClick={() => { this.createRoom() }}>Create Room</button>
+                                    {this.displayRoom()}
                                 </div>
                                 <div className="app-pixi" style={{
                                     backgroundImage: 'url(map.png)',
