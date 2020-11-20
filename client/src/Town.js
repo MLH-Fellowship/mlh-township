@@ -1,10 +1,12 @@
 import { Component, createRef } from 'react';
 import * as keyboardjs from 'keyboardjs';
-import { Stage, Sprite, Container, Text} from '@inlet/react-pixi';
+import { Stage, Sprite, Container, Text } from '@inlet/react-pixi';
 // eslint-disable-next-line
 import Peer from 'peerjs';
 
 import './Town.css';
+import joinIcon from './join.png';
+import createIcon from './create.png';
 
 // import bunny from './bunny.png';
 
@@ -28,6 +30,8 @@ class Town extends Component {
         this.handleUserinput = this.handleUserinput.bind(this);
         this.handleAvatarinput = this.handleAvatarinput.bind(this);
         this.onSubmitForm = this.onSubmitForm.bind(this);
+        this.displayRoom = this.displayRoom.bind(this);
+        this.showOptions = false;
 
         this.state = {
             conn: props.conn,
@@ -48,9 +52,9 @@ class Town extends Component {
                 calls: {}
             },
             myStream: null,
-            isInited: false,
+            isInited: true,
         }
-    }
+        }
 
     isRoomActive() {
         return this.state.room.isActive;
@@ -71,6 +75,28 @@ class Town extends Component {
 
         console.log(this.videoRef);
 
+        keyboardjs.watch();
+        keyboardjs.bind('', (e) => {
+            switch (e.code) {
+                case "ArrowLeft":
+                    this.setState({ ...this.state, x: Math.max(0, this.state.x - (e.shiftKey ? 7 : 3)) });
+                    break;
+                case "ArrowRight":
+                    this.setState({ ...this.state, x: Math.min(this.state.width - 25, this.state.x + (e.shiftKey ? 7 : 3)) });
+                    break;
+                case "ArrowUp":
+                    this.setState({ ...this.state, y: Math.max(0, this.state.y - (e.shiftKey ? 7 : 3)) });
+                    break;
+                case "ArrowDown":
+                    this.setState({ ...this.state, y: Math.min(this.state.height - 25, this.state.y + (e.shiftKey ? 7 : 3)) });
+                    break;
+                default:
+            }
+            // Send final location to backend
+            this.state.conn.emit('town/move', { x: this.state.x, y: this.state.y });
+            this.displayRoom();
+        });
+    
         let peer = new Peer({
             config: {
                 iceServers: [
@@ -133,39 +159,16 @@ class Town extends Component {
         });
 
         // starts watching for keypresses
-        keyboardjs.watch();
-        keyboardjs.bind('', (e) => {
-            switch (e.code) {
-                case "ArrowLeft":
-                    this.setState({ ...this.state, x: Math.max(0, this.state.x - (e.shiftKey ? 7 : 3)) });
-                    break;
-                case "ArrowRight":
-                    this.setState({ ...this.state, x: Math.min(this.state.width - 25, this.state.x + (e.shiftKey ? 7 : 3)) });
-                    break;
-                case "ArrowUp":
-                    this.setState({ ...this.state, y: Math.max(0, this.state.y - (e.shiftKey ? 7 : 3)) });
-                    break;
-                case "ArrowDown":
-                    this.setState({ ...this.state, y: Math.min(this.state.height - 25, this.state.y + (e.shiftKey ? 7 : 3)) });
-                    break;
-                default:
-            }
-            // Send final location to backend
-            this.state.conn.emit('town/move', { x: this.state.x, y: this.state.y });       
-        });
+
     }
 
     displayRoom() {
-        let xc = this.state.width/2, yc  = 0;
+        let xc = this.state.width / 2, yc = 0;
         let radius = 200;
-        let dist = Math.sqrt(( this.state.x - xc )*( this.state.x - xc ) + ( this.state.y - yc )*( this.state.y - yc ));
-        
-        if( dist < radius ){
-            // return(
-            //     <button onClick={() => { this.joinRoom() }} >Join Room</button>
-            //     <button onClick={() => { this.createRoom() }}>Create Room</button>
-            // );
-        } 
+        let dist = Math.sqrt((this.state.x - xc) * (this.state.x - xc) + (this.state.y - yc) * (this.state.y - yc));
+        // this.setState({ ...this.state, showOptions: dist < radius });
+this.showOptions = dist < radius;
+
     }
 
     renderUsers() {
@@ -173,7 +176,7 @@ class Town extends Component {
             const user = this.state.users[userkey];
             return (
                 <Container position={[user.xAxis, user.yAxis]}>
-                    <Text text={user.username} anchor={0.5} x={0} y={-40} 
+                    <Text text={user.username} anchor={0.5} x={0} y={-40}
                         style={
                             {
                                 align: 'center',
@@ -182,10 +185,10 @@ class Town extends Component {
                                 fontWeight: 'bold',
                                 fontVariant: 'small-caps',
                                 wordWrap: true,
-                                wordWrapWidth: 40,   
+                                wordWrapWidth: 40,
                                 color: 'white',
                             }
-                        }/>
+                        } />
                     <Sprite key={index} image={"./" + user.avatar + ".png"} anchor={0.5} />
                 </Container>
             )
@@ -237,7 +240,7 @@ class Town extends Component {
             this.addVideoStream(myVideo, stream);
 
             // HTML VIDEO ELEMENT END =======================
-            
+
             console.log("Current Peer condition", this.state.peer);
 
             this.state.peer.on('call', call => {
@@ -246,7 +249,7 @@ class Town extends Component {
 
                 const video = document.createElement('video');
                 video.setAttribute("id", call.peer);
-                
+
                 call.on('stream', userVideoStream => {
                     console.log("Streaming started!");
                     // console.log(userVideoStream);
@@ -278,11 +281,11 @@ class Town extends Component {
 
                 call.on('close', () => {
                     console.log("Call kiya tha par band ho gaya");
-                    try{
+                    try {
                         document.getElementById(member.peerId).remove();
                         video.remove();
                     }
-                    catch(error){
+                    catch (error) {
                         console.error(error)
                     }
                 });
@@ -301,7 +304,7 @@ class Town extends Component {
                 });
                 this.setState({ room: { ...this.state.room, members: newArray } });
                 document.getElementById(member.peerId).remove();
-                
+
             });
 
         });
@@ -343,27 +346,27 @@ class Town extends Component {
 
                     this.setState({ room: { ...this.state.room, members: [this.state.room.members, member] } });
                     console.log(member, "ka call aa raha hai");
-    
+
                     const call = await this.state.peer.call(member.peerId, this.state.myStream);
-    
+
                     const video = document.createElement('video');
                     video.setAttribute("id", member.peerId);
-    
+
                     call.on('stream', userVideoStream => {
                         console.log("room/join user video stream recieved", userVideoStream);
                         this.addVideoStream(video, userVideoStream);
                     });
-    
+
                     call.on('close', () => {
                         console.log("Call kiya tha par band ho gaya");
                         // video.remove();
                         document.getElementById(member.peerId).remove();
                     });
-    
+
                     console.log(this.state.room);
                     // this.state.room.calls[member.peerId] = call;
                 });
-    
+
                 this.state.conn.on('room/leave', ({ member }) => {
                     // this.state.room.calls[member.peerId].close();
                     // TODO: Remove video element
@@ -374,7 +377,7 @@ class Town extends Component {
                     this.setState({ room: { ...this.state.room, members: newArray } });
 
                     const el = document.getElementById(member.peerId);
-                    if(el) {
+                    if (el) {
                         el.remove();
                     }
                 });
@@ -395,7 +398,7 @@ class Town extends Component {
     leaveRoom() {
         this.state.conn.emit('room/leave', { "roomName": this.state.room.name });
         this.setState({ room: { ...this.state.room, members: [], isActive: false, name: "" } });
-        this.state.myStream.getTracks().forEach(function(track) {
+        this.state.myStream.getTracks().forEach(function (track) {
             console.log('-stop-', track);
             track.stop();
         });
@@ -405,23 +408,23 @@ class Town extends Component {
         return (
 
             this.state.isInited ? (
-            <div className="app-town">
+                <div className="app-town">
 
-                {
-                    this.state.room.isActive ?
-                        (
-                            <div className="app-room" style={{
-                                backgroundColor: "#222222",
-                                backgroundPosition: 'center',
-                                backgroundSize: 'cover',
-                                backgroundRepeat: 'no-repeat',
-                                color: 'white',
-                            }}>
-                                <div>
-                                    <button onClick={() => { this.leaveRoom() }}>Leave Room</button>
-                                </div>
-                                <h2>{this.state.room.name}</h2>
-                                {/* <ul>
+                    {
+                        this.state.room.isActive ?
+                            (
+                                <div className="app-room" style={{
+                                    backgroundColor: "#222222",
+                                    backgroundPosition: 'center',
+                                    backgroundSize: 'cover',
+                                    backgroundRepeat: 'no-repeat',
+                                    color: 'white',
+                                }}>
+                                    <div>
+                                        <button onClick={() => { this.leaveRoom() }}>Leave Room</button>
+                                    </div>
+                                    <h2>{this.state.room.name}</h2>
+                                    {/* <ul>
                                     {
                                         this.state.room.members.map((member, index) => {
                                             return (
@@ -430,62 +433,76 @@ class Town extends Component {
                                         })
                                     }
                                 </ul> */}
-                                <div id="video-grid" ref={this.videoRef}>
-                                </div>
-                                <div id="overlay">
-                                    <div className="app-chat">
-                                        <ChatBox conn={this.state.conn} room={this.state.room} isRoomActive={this.isRoomActive} />
+                                    <div id="video-grid" ref={this.videoRef}>
                                     </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div>
-                                <div>
-                                    {this.displayRoom()}
-                                </div>
-                                <div className="app-pixi" style={{
-                                    backgroundImage: 'url(map.png)',
-                                    backgroundPosition: 'center',
-                                    backgroundSize: 'cover',
-                                    backgroundRepeat: 'no-repeat',
-                                }}>
-                                    <Stage width={this.state.width} height={this.state.height} options={{ transparent: true, antialias: true }}>
-                                        <Sprite image={`./${this.state.inputAvatar}.png`} x={this.state.x} y={this.state.y} />
-                                        {this.renderUsers()}
-                                    </Stage>
                                     <div id="overlay">
                                         <div className="app-chat">
                                             <ChatBox conn={this.state.conn} room={this.state.room} isRoomActive={this.isRoomActive} />
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        )
-                }
+                            ) : (
+                                <div>
+                                    <div>
+                                        {this.displayRoom()}
+                                    </div>
+                                    <div className="app-pixi" style={{
+                                        backgroundImage: 'url(map.png)',
+                                        backgroundPosition: 'center',
+                                        backgroundSize: 'cover',
+                                        backgroundRepeat: 'no-repeat',
+                                    }}>
+                                        <Stage width={this.state.width} height={this.state.height} options={{ transparent: true, antialias: true }}>
+                                            <Sprite image={`./${this.state.inputAvatar}.png`} x={this.state.x} y={this.state.y} />
+                                            {this.renderUsers()}
+                                        </Stage>
+                                        {
+                                            this.showOptions ? (
+                                                <div className="options-overlay">
+                                                    <button className="mr-10" onClick={this.joinRoom} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', outline: 'none' }}>
+                                                        <img alt="Join Room" src={joinIcon}></img>
+                                                        <p>Join Room</p>
+                                                    </button>
+                                                    <button onClick={this.createRoom} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', outline: 'none' }}>
+                                                        <img alt="Create Room" src={createIcon}></img>
+                                                        <p>Create Room</p>
+                                                    </button>
+                                                </div>
+                                            ) : ""
+                                        }
+                                        <div id="overlay">
+                                            <div className="app-chat">
+                                                <ChatBox conn={this.state.conn} room={this.state.room} isRoomActive={this.isRoomActive} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                    }
 
-            </div>
-            ) :
-            (
-                <div class="app-landing">
-                    <div class="form-container">
-                        <form class="app-join-form" onSubmit={this.onSubmitForm}>
-                            <h2 className="align-center text-3xl mb-5" style={{textAlign: 'center', }}>Welcome!</h2>
-                            <input onChange={this.handleUserinput} value={this.state.inputUsername} className="mt-3 p-1" placeholder="What should we call you?"></input>
-                            <label className="mt-3" for="avatar-select">Select your avatar:&nbsp;</label>
-                            <select value={this.state.inputAvatar} onChange={this.handleAvatarinput} className="mt-3 p-1 bg-white" id="avatar-select">
-                                <option value="bunny">Bunny</option>
-                                <option value="bald">Bald</option>
-                                <option value="biker">Biker</option>
-                                <option value="blue">Blue</option>
-                                <option value="girl">Girl</option>
-                                <option value="green">Green</option>
-                            </select>
-                            <img alt="this will be you uwu :)" src={"./" + this.state.inputAvatar + ".png"} className="my-3" width="50px" /> 
-                            <button className="mt-3 bg-blue-500 p-2 rounded-md text-white" type="submit">Join!</button>
-                        </form>
-                    </div>
                 </div>
-            )
+            ) :
+                (
+                    <div class="app-landing">
+                        <div class="form-container">
+                            <form class="app-join-form" onSubmit={this.onSubmitForm}>
+                                <h2 className="align-center text-3xl mb-5" style={{ textAlign: 'center', }}>Welcome!</h2>
+                                <input onChange={this.handleUserinput} value={this.state.inputUsername} className="mt-3 p-1" placeholder="What should we call you?"></input>
+                                <label className="mt-3" for="avatar-select">Select your avatar:&nbsp;</label>
+                                <select value={this.state.inputAvatar} onChange={this.handleAvatarinput} className="mt-3 p-1 bg-white" id="avatar-select">
+                                    <option value="bunny">Bunny</option>
+                                    <option value="bald">Bald</option>
+                                    <option value="biker">Biker</option>
+                                    <option value="blue">Blue</option>
+                                    <option value="girl">Girl</option>
+                                    <option value="green">Green</option>
+                                </select>
+                                <img alt="this will be you uwu :)" src={"./" + this.state.inputAvatar + ".png"} className="my-3" width="50px" />
+                                <button className="mt-3 bg-blue-500 p-2 rounded-md text-white" type="submit">Join!</button>
+                            </form>
+                        </div>
+                    </div>
+                )
         );
     }
 }
