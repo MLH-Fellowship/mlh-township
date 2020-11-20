@@ -1,11 +1,12 @@
 import { Component, createRef } from 'react';
 import * as keyboardjs from 'keyboardjs';
 import { Stage, Sprite } from '@inlet/react-pixi';
+// eslint-disable-next-line
 import Peer from 'peerjs';
 
 import './Town.css';
 
-import bunny from './bunny.png';
+// import bunny from './bunny.png';
 
 import ChatBox from './ChatBox';
 
@@ -24,12 +25,18 @@ class Town extends Component {
         this.createRoom = this.createRoom.bind(this);
         this.leaveRoom = this.leaveRoom.bind(this);
         this.isRoomActive = this.isRoomActive.bind(this);
+        this.handleUserinput = this.handleUserinput.bind(this);
+        this.handleAvatarinput = this.handleAvatarinput.bind(this);
+        this.onSubmitForm = this.onSubmitForm.bind(this);
+
         this.state = {
             conn: props.conn,
             x: Math.floor(xSpawn),
             y: Math.floor(ySpawn),
             height: wHeight,
             width: wWidth,
+            inputUsername: "",
+            inputAvatar: "biker",
             users: {},
             peer: null,
             peerId: "",
@@ -41,11 +48,20 @@ class Town extends Component {
                 calls: {}
             },
             myStream: null,
+            isInited: false,
         }
     }
 
     isRoomActive() {
         return this.state.room.isActive;
+    }
+
+    handleUserinput(event) {
+        this.setState({ inputUsername: event.target.value });
+    }
+
+    handleAvatarinput(event) {
+        this.setState({ inputAvatar: event.target.value });
     }
 
     // 167993
@@ -80,10 +96,6 @@ class Town extends Component {
 
         this.setState({ peer: peer });
 
-        let name = "zerefwayne";
-
-        this.state.conn.emit('init', { username: name, x: this.state.x, y: this.state.y });
-
         this.state.conn.on('room/update', ({ members }) => {
             this.setState({ room: { ...this.state.room, "members": members } });
         })
@@ -95,7 +107,7 @@ class Town extends Component {
                     newUsers[player.socketId] = player;
                 }
             });
-            this.setState({ ...this.state, users: { ...this.state.users, ...newUsers } });
+            this.setState({ ...this.state, users: { ...this.state.users, ...newUsers }, isInited: true });
         })
 
         this.state.conn.on('town/join', ({ player }) => {
@@ -146,7 +158,8 @@ class Town extends Component {
     renderUsers() {
         return Object.keys(this.state.users).map((userkey, index) => {
             const user = this.state.users[userkey];
-            return (<Sprite key={index} image="./bunny.png" x={user.xAxis} y={user.yAxis} />)
+            console.log(user);
+            return (<Sprite key={index} image={"./" + user.avatar + ".png"} x={user.xAxis} y={user.yAxis} />)
         });
     }
 
@@ -341,6 +354,15 @@ class Town extends Component {
         }
     }
 
+    onSubmitForm(e) {
+        e.preventDefault();
+        let name = this.state.inputUsername || "unknown";
+        let avatar = this.state.inputAvatar || "bunny";
+        let user = { username: name, x: this.state.x, y: this.state.y, avatar: avatar };
+        console.log("making user object", user);
+        this.state.conn.emit('init', user);
+    }
+
     leaveRoom() {
         this.state.conn.emit('room/leave', { "roomName": this.state.room.name });
         this.setState({ room: { ...this.state.room, members: [], isActive: false, name: "" } });
@@ -352,6 +374,8 @@ class Town extends Component {
 
     render() {
         return (
+
+            this.state.isInited ? (
             <div className="app-town">
 
                 {
@@ -398,7 +422,7 @@ class Town extends Component {
                                     backgroundRepeat: 'no-repeat',
                                 }}>
                                     <Stage width={this.state.width} height={this.state.height} options={{ transparent: true, antialias: true }}>
-                                        <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
+                                        <Sprite image={`./${this.state.inputAvatar}.png`} x={this.state.x} y={this.state.y} />
                                         {this.renderUsers()}
                                     </Stage>
                                     <div id="overlay">
@@ -412,6 +436,28 @@ class Town extends Component {
                 }
 
             </div>
+            ) :
+            (
+                <div class="app-landing">
+                    <div class="form-container">
+                        <form class="app-join-form" onSubmit={this.onSubmitForm}>
+                            <h2 className="align-center text-3xl mb-5" style={{textAlign: 'center', }}>Welcome!</h2>
+                            <input onChange={this.handleUserinput} value={this.state.inputUsername} className="mt-3 p-1" placeholder="What should we call you?"></input>
+                            <label className="mt-3" for="avatar-select">Select your avatar:&nbsp;</label>
+                            <select value={this.state.inputAvatar} onChange={this.handleAvatarinput} className="mt-3 p-1 bg-white" id="avatar-select">
+                                <option value="bunny">Bunny</option>
+                                <option value="bald">Bald</option>
+                                <option value="biker">Biker</option>
+                                <option value="blue">Blue</option>
+                                <option value="girl">Girl</option>
+                                <option value="green">Green</option>
+                            </select>
+                            <img alt="this will be you uwu :)" src={"./" + this.state.inputAvatar + ".png"} className="my-3" width="50px" /> 
+                            <button className="mt-3 bg-blue-500 p-2 rounded-md text-white" type="submit">Join!</button>
+                        </form>
+                    </div>
+                </div>
+            )
         );
     }
 }

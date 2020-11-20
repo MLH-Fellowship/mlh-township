@@ -20,12 +20,13 @@ const io = require("socket.io")(server, {
 // ===============================================
 
 class Player extends Object {
-    constructor(socketId, peerId = null, username = null, xAxis = 0, yAxis = 0) {
+    constructor(socketId, peerId = null, avatar="bunny", username = null, xAxis = 0, yAxis = 0) {
         super();
         this.socketId = socketId;
         this.username = username;
         this.xAxis = xAxis;
         this.yAxis = yAxis;
+        this.avatar = avatar;
     }
 
     updateAxes(xAxis, yAxis) {
@@ -39,6 +40,10 @@ class Player extends Object {
 
     updatePeerId(peerId) {
         this.peerId = peerId
+    }
+
+    updateAvatar(avatar) {
+        this.avatar = avatar;
     }
 
 }
@@ -173,6 +178,7 @@ io.on("connection", (socket) => {
         let player = ACTIVE_PLAYERS.getPlayer(socketId);
         player.updateUsername(message.username);
         player.updateAxes(message.x, message.y);
+        player.updateAvatar(message.avatar);
         console.log("town/join", player);
         socket.emit('init', {
             'activePlayers': ACTIVE_PLAYERS.getList()
