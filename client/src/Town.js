@@ -2,12 +2,19 @@ import { Component, createRef } from 'react';
 import * as keyboardjs from 'keyboardjs';
 import { Stage, Sprite } from '@inlet/react-pixi';
 import Peer from 'peerjs';
+import * as PIXI from 'pixi.js';
 
 import './Town.css';
 
 import bunny from './bunny.png';
 
 import ChatBox from './ChatBox';
+import { id } from 'date-fns/locale';
+
+// Sprite animation stuff
+var mov = ["up", "down", "left", "right"];
+const loader = PIXI.Loader.shared;
+
 
 class Town extends Component {
     constructor(props) {
@@ -24,7 +31,13 @@ class Town extends Component {
         this.createRoom = this.createRoom.bind(this);
         this.leaveRoom = this.leaveRoom.bind(this);
         this.isRoomActive = this.isRoomActive.bind(this);
+        this.app = new PIXI.Application({ width: wHeight, height: wWidth });
+        this.idle = {};
         this.state = {
+            isLoaded: false,
+            animated: {},
+            isMoving: true,
+            direction: 0, 
             conn: props.conn,
             x: Math.floor(xSpawn),
             y: Math.floor(ySpawn),
@@ -80,6 +93,34 @@ class Town extends Component {
 
         this.setState({ peer: peer });
 
+        document.body.appendChild(this.app.view);
+
+        // Initialize pixi sprites
+        loader.add("./girlSpriteSheet.json").load((loader, resources) => {
+            let sheet = resources["./girlSpriteSheet.json"].spritesheet;
+            let anim = {};
+
+            mov.forEach(element => {
+                anim[element] = new PIXI.AnimatedSprite(sheet.animations[element[0]], true);
+                console.log(this.anim[element]);
+                anim[element].animationSpeed = 0.15;
+                anim[element].updateAnchor = true;
+            });
+            this.setState({...this.state, isLoaded: true, animated: anim});
+            
+        }
+
+        );
+
+        this.state.animated["up"].position.set(this.x, this.y);
+        this.state.animated["up"].gotoAndPlay(2);
+        this.app.stage.addChild(this.animated["up"]);
+        this.app.ticker.add(() => {
+            this.state.animated.up.position.y -= 1;
+        })
+
+
+        // let name = prompt("What should we call you?", "???")
         let name = "zerefwayne";
 
         this.state.conn.emit('init', { username: name, x: this.state.x, y: this.state.y });
@@ -126,15 +167,19 @@ class Town extends Component {
             switch (e.code) {
                 case "ArrowLeft":
                     this.setState({ ...this.state, x: Math.max(0, this.state.x - (e.shiftKey ? 7 : 3)) });
+                    this.direction = 2;
                     break;
                 case "ArrowRight":
                     this.setState({ ...this.state, x: Math.min(this.state.width - 25, this.state.x + (e.shiftKey ? 7 : 3)) });
+                    this.direction = 3;
                     break;
                 case "ArrowUp":
                     this.setState({ ...this.state, y: Math.max(0, this.state.y - (e.shiftKey ? 7 : 3)) });
+                    this.direction = 0;
                     break;
                 case "ArrowDown":
                     this.setState({ ...this.state, y: Math.min(this.state.height - 25, this.state.y + (e.shiftKey ? 7 : 3)) });
+                    this.direction = 1;
                     break;
                 default:
             }
@@ -146,7 +191,13 @@ class Town extends Component {
     renderUsers() {
         return Object.keys(this.state.users).map((userkey, index) => {
             const user = this.state.users[userkey];
-            return (<Sprite key={index} image="./bunny.png" x={user.xAxis} y={user.yAxis} />)
+            if(user.isMoving){
+                user.animated[mov[this.direction]].gotoAndPlay(2);
+                user.animated[mov[this.direction]].position.set(user.xAxis, user.yAxis);                
+            }
+            else  
+                user.animated[mov[this.direction]].gotoAndStop(2);
+            // TODO: if previous move wasn't same, hide/remove child
         });
     }
 
@@ -352,6 +403,7 @@ class Town extends Component {
 
     render() {
         return (
+            this.state.isLoaded ? (
             <div className="app-town">
 
                 {
@@ -398,7 +450,6 @@ class Town extends Component {
                                     backgroundRepeat: 'no-repeat',
                                 }}>
                                     <Stage width={this.state.width} height={this.state.height} options={{ transparent: true, antialias: true }}>
-                                        <Sprite image="./bunny.png" x={this.state.x} y={this.state.y} />
                                         {this.renderUsers()}
                                     </Stage>
                                     <div id="overlay">
@@ -412,6 +463,11 @@ class Town extends Component {
                 }
 
             </div>
+            ): (
+                <div>
+                    Loading
+                </div>
+            )
         );
     }
 }
