@@ -20,7 +20,7 @@ const io = require("socket.io")(server, {
 // ===============================================
 
 class Player extends Object {
-    constructor(socketId, peerId=null, username = null, xAxis = 0, yAxis = 0) {
+    constructor(socketId, peerId = null, username = null, xAxis = 0, yAxis = 0) {
         super();
         this.socketId = socketId;
         this.username = username;
@@ -203,7 +203,7 @@ io.on("connection", (socket) => {
     socket.on('user/peer', (peerId) => {
         let plater = ACTIVE_PLAYERS.getPlayer(socket.id);
         player.updatePeerId(peerId);
-        console.log('- Peer ID updated -',player)
+        console.log('- Peer ID updated -', player)
     });
 
     socket.on('room/create', (message) => {
@@ -223,7 +223,7 @@ io.on("connection", (socket) => {
         io.emit('new_room', { "room_name": name }); //tell everyone about the new room // TODO - Receive it on the frontend
 
         socket.join(name); // joins the socket to new room
-        
+
         room.addMember(ACTIVE_PLAYERS.getPlayer(socket.id)) //adds member to js room
 
         io.to(name).emit('room/join', {
@@ -232,67 +232,32 @@ io.on("connection", (socket) => {
     });
 
     socket.on('room/join', (message) => {
+        // roomname = message.name
+        let roomName = message.name;
+        let room;
+
         try {
-            let room = ACTIVE_ROOMS.getRoom(message.name);
+            // sets the room, errors out if room doesn't exist.
+            room = ACTIVE_ROOMS.getRoom(roomName);
         }
         catch (error) {
+            socket.emit('error', { message: `room ${roomName} doesn't exist` });
             console.log("Room doesn't exist!");
             return;
         }
-
-        // Leave currently joined rooms
-        try {
-            socket.rooms.forEach((room) => {
-                if (room === socket.id) {
-                    return;
-                }
-                socket.leave(room);
-                ACTIVE_ROOMS.getRoom(
-                    room
-                ).removeMember(ACTIVE_PLAYERS.getPlayer(socket.id));
-            })
-        }
-        catch (error) {
-            console.log(error)
-            return
-        }
-
         // Join user to a new room
-        try {
-            socket.join(message.name);
-        }
-        catch (err) {
-            console.log(err)
-        }
-        finally {
-            let room = ACTIVE_ROOMS.getRoom(message.name),
-                player = ACTIVE_PLAYERS.getPlayer(socket.id);
-            if (room === undefined) {
-                socket.emit('error', { message: 'Room does not exists' })
-                return;
-            }
-            room.addMember(player);
-            console.log(room.id, room.members.length);
-            try {
-                socket.rooms.forEach((roomID) => {
-                    if (roomID === socket.id) {
-                        return;
-                    }
-                    // socket.to(roomID).emit('room/update', {
-                    //     members: room.getMembersList()
-                    // });
-                    console.log(roomID, "informing join", player);
-                    io.to(roomID).emit('room/join', {
-                        "member": player
-                    });
-                })
-            }
-            catch (error) {
-                console.log(error)
-                return
-            }
-            // socket.emit('room/update', {}
-        }
+        socket.join(roomName);
+
+        let player = ACTIVE_PLAYERS.getPlayer(socket.id);
+
+        room.addMember(player);
+
+        console.log(room.id, room.members.length);
+
+        console.log(roomName, "informing join", player);
+        io.to(roomName).emit('room/join', {
+            "member": player
+        });
     });
 
     socket.on('room/leave', (message) => {
