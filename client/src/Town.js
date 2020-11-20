@@ -10,7 +10,6 @@ import bunny from './bunny.png';
 import ChatBox from './ChatBox';
 
 class Town extends Component {
-
     constructor(props) {
         super(props);
         this.videoRef = createRef();
@@ -60,10 +59,10 @@ class Town extends Component {
             config: {
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
+                    // { urls: 'stun:stun1.l.google.com:19302' },
+                    // { urls: 'stun:stun2.l.google.com:19302' },
+                    // { urls: 'stun:stun3.l.google.com:19302' },
+                    // { urls: 'stun:stun4.l.google.com:19302' },
                 ]
             }
         });
@@ -87,7 +86,6 @@ class Town extends Component {
 
         this.state.conn.on('room/update', ({ members }) => {
             this.setState({ room: { ...this.state.room, "members": members } });
-
         })
 
         this.state.conn.on('init', ({ activePlayers }) => {
@@ -103,7 +101,6 @@ class Town extends Component {
         this.state.conn.on('town/join', ({ player }) => {
             if (player.socketId !== this.state.conn.id) {
                 this.setState({ ...this.state, users: { ...this.state.users, [player.socketId]: player } });
-
             }
         });
 
@@ -111,7 +108,6 @@ class Town extends Component {
             let newUsers = this.state.users;
             delete newUsers[socketId]
             this.setState({ ...this.state, users: newUsers });
-            this.state.peer.disconnect();
         });
 
         this.state.conn.on('town/update', ({ players }) => {
@@ -170,9 +166,107 @@ class Town extends Component {
         this.videoRef.current.append(videoEl);
     }
 
-    joinRoom = async () => {
+    createRoom = async () => {
 
-        
+        let roomName = prompt("Enter new room name: ");
+
+        if (!roomName) {
+            window.alert("Please enter a valid room name.");
+            return;
+        }
+
+        // await this.state.peer.reconnect();
+        this.state.conn.emit('room/create', { "name": roomName });
+        this.setState({ room: { ...this.state.room, isActive: true, name: roomName } });
+
+        window.navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        }).then(stream => {
+
+            console.log("Obtained your stream", stream);
+            this.setState({ myStream: stream });
+
+            // HTML VIDEO ELEMENT START =======================
+
+            const myVideo = document.createElement('video');
+            myVideo.setAttribute('id', this.state.peer.id);
+            myVideo.muted = true;
+            this.addVideoStream(myVideo, stream);
+
+            // HTML VIDEO ELEMENT END =======================
+            
+            console.log("Current Peer condition", this.state.peer);
+
+            this.state.peer.on('call', call => {
+                console.log("Set on call connector", call);
+                call.answer(stream);
+
+                const video = document.createElement('video');
+                video.setAttribute("id", call.peer);
+                
+                call.on('stream', userVideoStream => {
+                    console.log("Streaming started!");
+                    // console.log(userVideoStream);
+                    // console.log(video);
+                    this.addVideoStream(video, userVideoStream);
+                });
+
+                call.on('close', () => {
+                    console.log("Someone closed their call", call);
+                })
+            });
+
+            this.state.conn.on('room/join', async ({ member }) => {
+
+                this.setState({ room: { ...this.state.room, members: [this.state.room.members, member] } });
+                console.log(member, "ka call aa raha hai");
+
+                const call = this.state.peer.call(member.peerId, this.state.myStream);
+
+                const video = document.createElement('video');
+                video.setAttribute("id", member.peerId);
+
+                console.log("Creating new video element!", video);
+
+                call.on('stream', userVideoStream => {
+                    console.log("room/join user video stream recieved", userVideoStream);
+                    this.addVideoStream(video, userVideoStream);
+                });
+
+                call.on('close', () => {
+                    console.log("Call kiya tha par band ho gaya");
+                    try{
+                        document.getElementById(member.peerId).remove();
+                        video.remove();
+                    }
+                    catch(error){
+                        console.error(error)
+                    }
+                });
+                console.log(this.state.room);
+                this.state.room.calls[member.peerId] = call;
+
+                console.log('-caals-', this.state.room.calls)
+            });
+
+            this.state.conn.on('room/leave', ({ member }) => {
+                console.log('Heading out ===============')
+                this.state.room.calls[member.peerId].close();
+                console.log("Leaving room", member);
+                let newArray = this.state.room.members.filter((m) => {
+                    return m.socketId !== member.socketId;
+                });
+                this.setState({ room: { ...this.state.room, members: newArray } });
+                document.getElementById(member.peerId).remove();
+                
+            });
+
+        });
+
+    }
+
+    joinRoom = async () => {
 
         let roomName = prompt("Kaunsa vaala join karna hai: ");
         if (roomName) {
@@ -197,94 +291,51 @@ class Town extends Component {
 
                     call.answer(stream);
                     const video = document.createElement('video');
+                    video.setAttribute("id", call.peer);
                     call.on('stream', userVideoStream => {
-                        console.log(userVideoStream);
-                        console.log(video);
                         this.addVideoStream(video, userVideoStream);
                     });
                 });
 
-                this.state.conn.on('room/join', ({ member }) => {
+                this.state.conn.on('room/join', async ({ member }) => {
+
                     this.setState({ room: { ...this.state.room, members: [this.state.room.members, member] } });
                     console.log(member, "ka call aa raha hai");
-                    const call = this.state.peer.call(member.peerId, this.state.myStream);
+    
+                    const call = await this.state.peer.call(member.peerId, this.state.myStream);
+    
                     const video = document.createElement('video');
+                    video.setAttribute("id", member.peerId);
+    
                     call.on('stream', userVideoStream => {
-                        console.log("Call aa raha hai", userVideoStream);
+                        console.log("room/join user video stream recieved", userVideoStream);
                         this.addVideoStream(video, userVideoStream);
                     });
+    
                     call.on('close', () => {
-                        video.remove();
+                        console.log("Call kiya tha par band ho gaya");
+                        // video.remove();
+                        document.getElementById(member.peerId).remove();
                     });
-                    // this.state.room.calls[member.peerId] = call;
-                });
-        
-                this.state.conn.on('room/leave', ({ member }) => {
-                    // this.state.room.calls[member.peerId].close();
-                    let newArray = this.state.room.members.filter((m) => {
-                        return m.socketId !== member.socketId;
-                    });
-                    this.setState({ room: { ...this.state.room, members: newArray } });
-                });
-
-                
-
-            });
-
-        }
-    }
-
-    createRoom = async () => {
-        let roomName = prompt("Room ka naam bata bhai: ");
-        if (roomName) {
-            // await this.state.peer.reconnect();
-            this.state.conn.emit('room/create', { "name": roomName });
-            this.setState({ room: { ...this.state.room, isActive: true, name: roomName } });
-
-            window.navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-            }).then(stream => {
-
-                this.setState({ myStream: stream });
-                const myVideo = document.createElement('video');
-                myVideo.muted = true;
-                this.addVideoStream(myVideo, stream);
-
-                this.state.peer.on('call', call => {
-                    call.answer(stream);
-                    const video = document.createElement('video');
-                    call.on('stream', userVideoStream => {
-                        console.log(userVideoStream);
-                        console.log(video);
-                        this.addVideoStream(video, userVideoStream);
-                    });
-                });
-
-                this.state.conn.on('room/join', ({ member }) => {
-                    this.setState({ room: { ...this.state.room, members: [this.state.room.members, member] } });
-                    console.log(member, "ka call aa raha hai");
-                    const call = this.state.peer.call(member.peerId, this.state.myStream);
-                    const video = document.createElement('video');
-                    call.on('stream', userVideoStream => {
-                        console.log("Call aa raha hai", userVideoStream);
-                        this.addVideoStream(video, userVideoStream);
-                    });
-                    call.on('close', () => {
-                        video.remove();
-                    });
+    
                     console.log(this.state.room);
                     // this.state.room.calls[member.peerId] = call;
                 });
-        
+    
                 this.state.conn.on('room/leave', ({ member }) => {
                     // this.state.room.calls[member.peerId].close();
+                    // TODO: Remove video element
+                    console.log("Leaving room", member);
                     let newArray = this.state.room.members.filter((m) => {
                         return m.socketId !== member.socketId;
                     });
                     this.setState({ room: { ...this.state.room, members: newArray } });
-                });
 
+                    const el = document.getElementById(member.peerId);
+                    if(el) {
+                        el.remove();
+                    }
+                });
             });
 
         }
@@ -292,13 +343,11 @@ class Town extends Component {
 
     leaveRoom() {
         this.state.conn.emit('room/leave', { "roomName": this.state.room.name });
-        this.setState({ room: { members: [], isActive: false, name: "" } });
-        // this.state.peer.disconnect();
-        window.navigator.getUserMedia({audio: true}, (stream) => {
-            stream.getTracks((track) => {
-                stream.removeTrack(track);
-            })
-        })
+        this.setState({ room: { ...this.state.room, members: [], isActive: false, name: "" } });
+        this.state.myStream.getTracks().forEach(function(track) {
+            console.log('-stop-', track);
+            track.stop();
+        });
     }
 
     render() {
@@ -365,8 +414,6 @@ class Town extends Component {
             </div>
         );
     }
-
-
 }
 
 export default Town;

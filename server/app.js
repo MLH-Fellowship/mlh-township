@@ -162,11 +162,10 @@ io.on("connection", (socket) => {
                 return;
             }
             ACTIVE_ROOMS.getRoom(room).removeMember(player)
-            io.to(room).emit('room/update', {
-                members: room.getMembersList()
+            io.to(room).emit('room/leave', {
+                player: player
             });
         })
-
     });
 
     socket.on('init', (message) => {
@@ -216,16 +215,14 @@ io.on("connection", (socket) => {
             room = new Room(name);
             ACTIVE_ROOMS.addRoom(room);
             console.log(`Room ${name} doesn't exist. Creating new room!`);
+            room = ACTIVE_ROOMS.getRoom(name);
         } else {
             console.log(`Room ${name} already exists. Joining the room.`);
         }
 
         io.emit('new_room', { "room_name": name }); //tell everyone about the new room // TODO - Receive it on the frontend
-
         socket.join(name); // joins the socket to new room
-
         room.addMember(ACTIVE_PLAYERS.getPlayer(socket.id)) //adds member to js room
-
         io.to(name).emit('room/join', {
             "member": player
         });
@@ -247,11 +244,8 @@ io.on("connection", (socket) => {
         }
         // Join user to a new room
         socket.join(roomName);
-
         let player = ACTIVE_PLAYERS.getPlayer(socket.id);
-
         room.addMember(player);
-
         console.log(room.id, room.members.length);
 
         console.log(roomName, "informing join", player);
@@ -274,9 +268,8 @@ io.on("connection", (socket) => {
         io.to(roomName).emit('room/leave', {
             member: player
         });
+        console.log("HEADED OUT=========================")
     });
-
-
 
     socket.on('room/chat', (message) => {
         let room;
