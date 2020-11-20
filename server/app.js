@@ -251,7 +251,12 @@ io.on("connection", (socket) => {
         // Join user to a new room
         socket.join(roomName);
         let player = ACTIVE_PLAYERS.getPlayer(socket.id);
+
+        try {
         room.addMember(player);
+        } catch (err) {
+            console.log(err);
+        }
         console.log(room.id, room.members.length);
 
         console.log(roomName, "informing join", player);
