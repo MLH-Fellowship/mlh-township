@@ -6,7 +6,7 @@
     by <a href='https://github.com/zerefwayne'>Aayush Joglekar</a>, <a href='https://github.com/pandafy'>Gagan Deep</a>, <a href='https://github.com/awalvie'>Vishesh Agrawal</a> and <a href='https://github.com/grimmmyshini'>Garima Singh</a>.
 </p>
 
-## 💁‍♂️ What is the project?
+## 💁‍♂️ What is the project? | [Watch the Demo](https://youtu.be/IHN9dKON70U)
 **MLH Township is a web application that harnesses the power of websockets and webRTC to provide the fellows a playgournd where they can comuunicate and hang out with each other in the game-like setting of MLH Town.**
 
 ## 🙇 Why do we need it?
