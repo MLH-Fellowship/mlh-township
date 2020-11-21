@@ -1,5 +1,4 @@
 import { Component } from 'react';
-import { formatDistance } from 'date-fns';
 
 import './ChatBox.css';
 
