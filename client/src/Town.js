@@ -45,7 +45,7 @@ class Town extends Component {
         this.state = {
             isLoaded: true,
             isMoving: true,
-            direction: 0, 
+            direction: 0,
             conn: props.conn,
             x: Math.floor(xSpawn),
             y: Math.floor(ySpawn),
@@ -90,28 +90,6 @@ class Town extends Component {
     componentDidMount = async () => {
 
         console.log(this.videoRef);
-
-        keyboardjs.watch();
-        keyboardjs.bind('', (e) => {
-            switch (e.code) {
-                case "ArrowLeft":
-                    this.setState({ ...this.state, x: Math.max(0, this.state.x - (e.shiftKey ? 7 : 3)) });
-                    break;
-                case "ArrowRight":
-                    this.setState({ ...this.state, x: Math.min(this.state.width - 25, this.state.x + (e.shiftKey ? 7 : 3)) });
-                    break;
-                case "ArrowUp":
-                    this.setState({ ...this.state, y: Math.max(0, this.state.y - (e.shiftKey ? 7 : 3)) });
-                    break;
-                case "ArrowDown":
-                    this.setState({ ...this.state, y: Math.min(this.state.height - 25, this.state.y + (e.shiftKey ? 7 : 3)) });
-                    break;
-                default:
-            }
-            // Send final location to backend
-            this.state.conn.emit('town/move', { x: this.state.x, y: this.state.y });
-            this.displayRoom();
-        });
 
         let peer = new Peer({
             config: {
@@ -177,49 +155,54 @@ class Town extends Component {
         // starts watching for keypresses
         keyboardjs.watch();
         keyboardjs.bind('', (e) => {
-            this.setState({...this.state, isMoving: true});
+            this.setState({ ...this.state, isMoving: true });
             switch (e.code) {
                 case "ArrowLeft":
                     this.setState({ ...this.state, x: Math.max(0, this.state.x - (e.shiftKey ? 7 : 3)) });
-                    this.direction = 2;
+                    this.setState({...this.state, direction: 2});
                     break;
                 case "ArrowRight":
                     this.setState({ ...this.state, x: Math.min(this.state.width - 25, this.state.x + (e.shiftKey ? 7 : 3)) });
-                    this.direction = 3;
+                    this.setState({...this.state, direction: 3});
                     break;
                 case "ArrowUp":
                     this.setState({ ...this.state, y: Math.max(0, this.state.y - (e.shiftKey ? 7 : 3)) });
-                    this.direction = 0;
+                    this.setState({...this.state, direction: 0});
                     break;
                 case "ArrowDown":
                     this.setState({ ...this.state, y: Math.min(this.state.height - 25, this.state.y + (e.shiftKey ? 7 : 3)) });
-                    this.direction = 1;
+                    this.setState({...this.state, direction: 1});
                     break;
                 default:
             }
             // Send final location to backend
-            this.state.conn.emit('town/move', { x: this.state.x, y: this.state.y });
+            this.state.conn.emit('town/move', { x: this.state.x, y: this.state.y, lastDirection: this.state.direction});
+            this.state.conn.emit('player/move', true);
+            this.displayRoom();
         }, () => {
-            this.setState({...this.state, isMoving: false});
+            this.setState({ ...this.state, isMoving: false });
+            this.state.conn.emit('player/move', false);
         });
     }
 
-    setTexture(sprite) {  
+    setTexture(sprite) {
+
         let textureArray = []
 
-        var mov = { 0: [`./mov/${sprite}/u_0.png`, `./mov/${sprite}/u_1.png`, `./mov/${sprite}/u_2.png`],
-            1: [`./mov/${sprite}/d_0.png`, `./mov/${sprite}/d_1.png`, `./mov/${sprite}/d_2.png`], 
+        var mov = {
+            0: [`./mov/${sprite}/u_0.png`, `./mov/${sprite}/u_1.png`, `./mov/${sprite}/u_2.png`],
+            1: [`./mov/${sprite}/d_0.png`, `./mov/${sprite}/d_1.png`, `./mov/${sprite}/d_2.png`],
             2: [`./mov/${sprite}/l_0.png`, `./mov/${sprite}/l_1.png`, `./mov/${sprite}/l_2.png`],
             3: [`./mov/${sprite}/r_0.png`, `./mov/${sprite}/r_1.png`, `./mov/${sprite}/r_2.png`]
         };
-        
+
         console.log(sprite);
-        for(let i = 0; i<4; i++){
-            textureArray[i] =[];
-            for(let j = 0; j<3; j++) {
+        for (let i = 0; i < 4; i++) {
+            textureArray[i] = [];
+            for (let j = 0; j < 3; j++) {
                 let text = PIXI.Texture.from(mov[i][j]);
                 textureArray[i][j] = text;
-            }            
+            }
         }
 
         return textureArray;
@@ -232,59 +215,82 @@ class Town extends Component {
         // this.setState({ ...this.state, showOptions: dist < radius });
         this.showOptions = dist < radius;
     }
-    
+
 
     renderUsers() {
         return Object.keys(this.state.users).map((userkey, index) => {
             const user = this.state.users[userkey];
-            if(!texture[user.inputAvatar]) texture[user.inputAvatar] = this.setTexture(user.inputAvatar);
+            console.log(user);
+            if (!texture[user.avatar]) texture[user.avatar] = this.setTexture(user.avatar);
 
-            return (
-                <Container position={[user.xAxis, user.yAxis]}>
-                    <Text text={user.username} anchor={0.5} x={0} y={-40}
-                        style={
-                            {
-                                align: 'center',
-                                fontFamily: 'Helvetica',
-                                fontSize: 20,
-                                fontWeight: 'bold',
-                                fontVariant: 'small-caps',
-                                wordWrap: true,
-                                wordWrapWidth: 40,
-                                color: 'white',
-                            }
-                        } />
-                     <AnimatedSprite 
+            if (texture[user.avatar][user.lastDirection]) {
+                return (
+                    <Container position={[user.xAxis, user.yAxis]}>
+                        <Text text={user.username} anchor={0.5} x={0} y={-40}
+                            style={
+                                {
+                                    align: 'center',
+                                    fontFamily: 'Helvetica',
+                                    fontSize: 20,
+                                    fontWeight: 'bold',
+                                    fontVariant: 'small-caps',
+                                    wordWrap: true,
+                                    wordWrapWidth: 40,
+                                    color: 'white',
+                                }
+                            } />
+                        <AnimatedSprite
                             key={index}
-                            position={[user.xAxis, user.yAxis]}
+                            position={[0, 0]}
                             anchor={0.5}
-                            textures={texture[user.inputAvatar][user.direction]}
+                            textures={texture[user.avatar][user.lastDirection]}
                             isPlaying={user.isMoving}
                             initialFrame={1}
                             animationSpeed={0.1}
-                            
-                            />
-                </Container>
-            )
+                        />
+                    </Container>
+                )
+            } else {
+                return (
+                    <Container position={[user.xAxis, user.yAxis]}>
+                        <Text text={user.username} anchor={0.5} x={0} y={-40}
+                            style={
+                                {
+                                    align: 'center',
+                                    fontFamily: 'Helvetica',
+                                    fontSize: 20,
+                                    fontWeight: 'bold',
+                                    fontVariant: 'small-caps',
+                                    wordWrap: true,
+                                    wordWrapWidth: 40,
+                                    color: 'white',
+                                }
+                            } />
+                        <Sprite image={`./mov/${user.avatar}/u_1.png`} x={0} y={0} />
+                    </Container>
+                );
+            }
         });
     }
 
     renderUs() {
-        if(!texture[this.state.inputAvatar]) texture[this.state.inputAvatar] = this.setTexture(this.state.inputAvatar);
-        
-        if(texture[this.state.inputAvatar][this.direction])
-            return(
-                <AnimatedSprite 
+        if (!texture[this.state.inputAvatar]) texture[this.state.inputAvatar] = this.setTexture(this.state.inputAvatar);
+
+        console.log(this.state);
+
+        if (texture[this.state.inputAvatar][this.state.direction])
+            return (
+                <AnimatedSprite
                     position={[this.state.x, this.state.y]}
                     anchor={0.5}
-                    textures={texture[this.state.inputAvatar][this.direction]}
+                    textures={texture[this.state.inputAvatar][this.state.direction]}
                     isPlaying={this.state.isMoving}
                     initialFrame={1}
                     animationSpeed={0.1}
-                    />
+                />
             );
-        return(
-            <Sprite image={`./mov/${this.state.inputAvatar}/u_1.png`} x={this.state.x} y={this.state.y}/>
+        return (
+            <Sprite image={`./mov/${this.state.inputAvatar}/u_1.png`} x={this.state.x} y={this.state.y} />
         );
     }
 
@@ -523,7 +529,7 @@ class Town extends Component {
                 backgroundRepeat: 'no-repeat',
             }}>
                 <Stage width={this.state.width} height={this.state.height} options={{ transparent: true, antialias: true }}>
-                    {this,this.renderUs()}
+                    {this, this.renderUs()}
                     {this.renderUsers()}
                 </Stage>
                 {

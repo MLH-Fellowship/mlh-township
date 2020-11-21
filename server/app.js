@@ -27,11 +27,18 @@ class Player extends Object {
         this.xAxis = xAxis;
         this.yAxis = yAxis;
         this.avatar = avatar;
+        this.lastDirection = 1;
+        this.isMoving = false;
     }
 
-    updateAxes(xAxis, yAxis) {
+    updateAxes(xAxis, yAxis, direction) {
         this.xAxis = xAxis;
         this.yAxis = yAxis;
+        this.lastDirection = direction;
+    }
+
+    updateIsMoving(state) {
+        this.isMoving = state;
     }
 
     updateUsername(username) {
@@ -177,7 +184,7 @@ io.on("connection", (socket) => {
         let socketId = String(socket.id);
         let player = ACTIVE_PLAYERS.getPlayer(socketId);
         player.updateUsername(message.username);
-        player.updateAxes(message.x, message.y);
+        player.updateAxes(message.x, message.y, message.lastDirection);
         player.updateAvatar(message.avatar);
         console.log("town/join", player);
         socket.emit('init', {
@@ -188,11 +195,16 @@ io.on("connection", (socket) => {
         });
     });
 
+    socket.on('player/move', (state) => {
+        let player = ACTIVE_PLAYERS.getPlayer(socketId);
+        player.updateIsMoving(state);
+    })
+
     socket.on('town/move', (message) => {
         // console.log('town/move', socket.id, message);
         let socketId = String(socket.id),
             player = ACTIVE_PLAYERS.getPlayer(socketId);
-        player.updateAxes(message.x, message.y);
+        player.updateAxes(message.x, message.y, message.lastDirection);
     });
 
     socket.on('town/chat', (message) => {
