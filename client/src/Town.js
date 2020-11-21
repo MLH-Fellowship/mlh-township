@@ -1,6 +1,7 @@
 import { Component, createRef } from 'react';
 import * as keyboardjs from 'keyboardjs';
-import { Stage, Sprite, Container, Text } from '@inlet/react-pixi';
+import * as PIXI from 'pixi.js';
+import { Stage, Sprite, AnimatedSprite, Container, Text } from '@inlet/react-pixi';
 // eslint-disable-next-line
 import Peer from 'peerjs';
 
@@ -11,6 +12,12 @@ import createIcon from './create.png';
 // import bunny from './bunny.png';
 
 import ChatBox from './ChatBox';
+import { id } from 'date-fns/locale';
+
+// Sprite animation stuff
+let bdText = PIXI.Texture.from("./map.png");
+let texture = {};
+
 
 class Town extends Component {
     constructor(props) {
@@ -36,6 +43,9 @@ class Town extends Component {
         this.showOptions = false;
 
         this.state = {
+            isLoaded: true,
+            isMoving: true,
+            direction: 0, 
             conn: props.conn,
             x: Math.floor(xSpawn),
             y: Math.floor(ySpawn),
@@ -165,7 +175,54 @@ class Town extends Component {
         });
 
         // starts watching for keypresses
+        keyboardjs.watch();
+        keyboardjs.bind('', (e) => {
+            this.setState({...this.state, isMoving: true});
+            switch (e.code) {
+                case "ArrowLeft":
+                    this.setState({ ...this.state, x: Math.max(0, this.state.x - (e.shiftKey ? 7 : 3)) });
+                    this.direction = 2;
+                    break;
+                case "ArrowRight":
+                    this.setState({ ...this.state, x: Math.min(this.state.width - 25, this.state.x + (e.shiftKey ? 7 : 3)) });
+                    this.direction = 3;
+                    break;
+                case "ArrowUp":
+                    this.setState({ ...this.state, y: Math.max(0, this.state.y - (e.shiftKey ? 7 : 3)) });
+                    this.direction = 0;
+                    break;
+                case "ArrowDown":
+                    this.setState({ ...this.state, y: Math.min(this.state.height - 25, this.state.y + (e.shiftKey ? 7 : 3)) });
+                    this.direction = 1;
+                    break;
+                default:
+            }
+            // Send final location to backend
+            this.state.conn.emit('town/move', { x: this.state.x, y: this.state.y });
+        }, () => {
+            this.setState({...this.state, isMoving: false});
+        });
+    }
 
+    setTexture(sprite) {  
+        let textureArray = []
+
+        var mov = { 0: [`./mov/${sprite}/u_0.png`, `./mov/${sprite}/u_1.png`, `./mov/${sprite}/u_2.png`],
+            1: [`./mov/${sprite}/d_0.png`, `./mov/${sprite}/d_1.png`, `./mov/${sprite}/d_2.png`], 
+            2: [`./mov/${sprite}/l_0.png`, `./mov/${sprite}/l_1.png`, `./mov/${sprite}/l_2.png`],
+            3: [`./mov/${sprite}/r_0.png`, `./mov/${sprite}/r_1.png`, `./mov/${sprite}/r_2.png`]
+        };
+        
+        console.log(sprite);
+        for(let i = 0; i<4; i++){
+            textureArray[i] =[];
+            for(let j = 0; j<3; j++) {
+                let text = PIXI.Texture.from(mov[i][j]);
+                textureArray[i][j] = text;
+            }            
+        }
+
+        return textureArray;
     }
 
     displayRoom() {
@@ -174,12 +231,14 @@ class Town extends Component {
         let dist = Math.sqrt((this.state.x - xc) * (this.state.x - xc) + (this.state.y - yc) * (this.state.y - yc));
         // this.setState({ ...this.state, showOptions: dist < radius });
         this.showOptions = dist < radius;
-
     }
+    
 
     renderUsers() {
         return Object.keys(this.state.users).map((userkey, index) => {
             const user = this.state.users[userkey];
+            if(!texture[user.inputAvatar]) texture[user.inputAvatar] = this.setTexture(user.inputAvatar);
+
             return (
                 <Container position={[user.xAxis, user.yAxis]}>
                     <Text text={user.username} anchor={0.5} x={0} y={-40}
@@ -195,10 +254,38 @@ class Town extends Component {
                                 color: 'white',
                             }
                         } />
-                    <Sprite key={index} image={"./" + user.avatar + ".png"} anchor={0.5} />
+                     <AnimatedSprite 
+                            key={index}
+                            position={[user.xAxis, user.yAxis]}
+                            anchor={0.5}
+                            textures={texture[user.inputAvatar][user.direction]}
+                            isPlaying={user.isMoving}
+                            initialFrame={1}
+                            animationSpeed={0.1}
+                            
+                            />
                 </Container>
             )
         });
+    }
+
+    renderUs() {
+        if(!texture[this.state.inputAvatar]) texture[this.state.inputAvatar] = this.setTexture(this.state.inputAvatar);
+        
+        if(texture[this.state.inputAvatar][this.direction])
+            return(
+                <AnimatedSprite 
+                    position={[this.state.x, this.state.y]}
+                    anchor={0.5}
+                    textures={texture[this.state.inputAvatar][this.direction]}
+                    isPlaying={this.state.isMoving}
+                    initialFrame={1}
+                    animationSpeed={0.1}
+                    />
+            );
+        return(
+            <Sprite image={`./mov/${this.state.inputAvatar}/u_1.png`} x={this.state.x} y={this.state.y}/>
+        );
     }
 
     setRoomDetails(name, members) {
@@ -409,7 +496,7 @@ class Town extends Component {
     onSubmitForm(e) {
         e.preventDefault();
         let name = this.state.inputUsername || "unknown";
-        let avatar = this.state.inputAvatar || "bunny";
+        let avatar = this.state.inputAvatar || "biker";
         let user = { username: name, x: this.state.x, y: this.state.y, avatar: avatar };
         console.log("making user object", user);
         this.state.conn.emit('init', user);
@@ -436,7 +523,7 @@ class Town extends Component {
                 backgroundRepeat: 'no-repeat',
             }}>
                 <Stage width={this.state.width} height={this.state.height} options={{ transparent: true, antialias: true }}>
-                    <Sprite image={`./${this.state.inputAvatar}.png`} x={this.state.x} y={this.state.y} />
+                    {this,this.renderUs()}
                     {this.renderUsers()}
                 </Stage>
                 {
@@ -498,14 +585,13 @@ class Town extends Component {
                             <input onChange={this.handleUserinput} value={this.state.inputUsername} className="mt-3 p-1" placeholder="What should we call you?"></input>
                             <label className="mt-3" for="avatar-select">Select your avatar:&nbsp;</label>
                             <select value={this.state.inputAvatar} onChange={this.handleAvatarinput} className="mt-3 p-1 bg-white" id="avatar-select">
-                                <option value="bunny">Bunny</option>
+                                {/* <option value="bunny">Bunny</option> */}
                                 <option value="bald">Bald</option>
                                 <option value="biker">Biker</option>
-                                <option value="blue">Blue</option>
+                                <option value="dragon">Dragon</option>
                                 <option value="girl">Girl</option>
-                                <option value="green">Green</option>
                             </select>
-                            <img alt="this will be you uwu :)" src={"./" + this.state.inputAvatar + ".png"} className="my-3" width="50px" />
+                            <img alt="this will be you uwu :)" src={`./mov/${this.state.inputAvatar}/d_1.png`} className="my-3" width="50px" />
                             <button className="mt-3 bg-blue-500 p-2 rounded-md text-white" type="submit">Join!</button>
                         </form>
                     </div>
